@@ -21,7 +21,7 @@ void PIDController_Init(PIDController *pid) {
     pid->T = 0.05;
 
     pid->Kp = 3;
-    pid->Ki= 0.2;
+    pid->Ki= 0; // 位置环默认不进行积分
     pid->Kd = 0;
 
     pid->out = 0.0f;

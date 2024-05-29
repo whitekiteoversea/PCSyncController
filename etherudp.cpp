@@ -8,8 +8,8 @@
 #include <QFileDialog>
 #include <QVariant>
 
-QString bindIP = "192.168.1.108"; //上位机接收IP
-unsigned short bindPort = 8001;  //上位机接收端口
+QString bindIP = "192.168.20.33"; //上位机接收IP
+unsigned short bindPort = 8888;  //上位机接收端口
 unsigned char etherRecvBuf[1474] = {0}; //以太网接收缓冲区
 uint8_t curSndCANMsgCnt = 0; //记录本次发送的CAN消息条数
 uint8_t etherudpSndBuf[1474] = {0};  //以太网报文发送缓冲区

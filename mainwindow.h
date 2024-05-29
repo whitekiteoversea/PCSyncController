@@ -11,6 +11,7 @@
 #include <QDir>
 #include <QTime>
 #include "FrameSheet.h"
+#include <QFile>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -29,8 +30,8 @@ public:
     void initStyle(); //样式表加载
 
     //下发以太网报文
-    void sendRequestSig();          //20ms周期通信信号发送
-    void sendTimeSyncSig();         //10ms周期时间同步信号发送
+    void sendRequestSig();          // 20ms周期通信信号发送
+    void sendTimeSyncSig();         // 10ms周期时间同步信号发送
     void sendGivenSpeedSig(unsigned char sendNo, short givenSpeed);       //发送单板速度给定
     void sendGivenPreSpeedSig(unsigned char sendNo, feedbackData sampleData, uint8_t prelen);    //发送单板预测给定
 
@@ -83,7 +84,6 @@ private slots:
     void on_StorePMSM2_clicked();
     void on_StorePMSM1_clicked();
     void on_StorePMSM3_clicked();
-
 private:
     Ui::MainWindow *ui;
     QTimer *dataTimer;
@@ -94,6 +94,7 @@ private:
     QUdpSocket *sendSocket;  //发送Socket
     QAxObject *excel;
     QTime currentTime;
+    QFile *pFile;
 };
 
 //系统状态方程一步迭代
@@ -103,7 +104,9 @@ typedef struct {
 }SYSPREARR;
 
 
-uint16_t Delay_xms(uint16_t value); //延时函数
+uint16_t Delay_xms(uint16_t value); //阻塞式延时函数
+uint8_t nonblockingDelay_xms(uint32_t *lastTime, uint16_t delayMS); //非阻塞式延时
+
 SYSPREARR oneStepPre(double *x_esti_arr);//一步预测
 short AverageSpeedCal(uint32_t recvPulse);
 //DPETC 判断C-A通道是否触发通信事件

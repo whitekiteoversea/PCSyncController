@@ -12,6 +12,14 @@
 #define BufMaxStorageCnt 6000
 #define SingleShotMaxStorageCnt (BufMaxStorageCnt/2)
 
+#define MAXDELAYLEN 5
+
+
+// 下发报文指令
+
+#define DATAUPLOAD          (0x1F)
+
+
 #pragma pack(1)
 
 // Standard CANID
@@ -44,13 +52,13 @@ typedef struct timeStamp {
 
 //Ethernet报文
 /*报文类型有三种：
- * Etype =1: 无预测直接发
- * Etype =2: NPC预测控制
- * Etype =4: 时钟同步帧
- * Etype =5: 周期获取位置反馈
- *
- * Etype =6: PC向ETH获取时延模拟数据
- * Etype =7: PC向CAS获取事件触发数据
+ * Etype =1: 无预测直接发 帧号+当前PC UTC时间+预测速度
+ * Etype =2: NPC预测控制 帧号+预测作用 UTC时间 + 预测速度（需要使用ETH包中的时间来给定发送时间）
+ * Etype =4: 时钟同步帧  帧号+当前PC UTC时间
+ * Etype =5: 周期获取位置反馈 帧号+当前PC UTC时间+当前查询位置/ 帧号+当前UTC同步时间+最新获取位置信号
+ * EType =6: 上传位置同步误差信息 帧号+ 当前UTC同步时间+实时平均误差信息
+ * Etype =7: PC向ETH获取时延模拟数据
+ * Etype =8: PC向CAS获取事件触发数据
  *
 */
 
@@ -74,10 +82,10 @@ typedef struct
     uint32_t ELen;           //Ethernet长度 Byte
     uint8_t EType;           //报文类型
     uint8_t ETotalPackNum;   //总CAN包数
-    uint8_t can_preLen[3];     //CAN1预测长度
+    uint8_t can_preLen[3];     //CAN预测长度
     uint32_t sendTimeStamp;  //发送时间戳
-    uint8_t canEnable[3];      //下发 or 上传数据包含can1节点数据
-    CANFrame_STD canPreCmd[3][10];  //CAN1预测命令
+    uint8_t canEnable[3];      //下发 or 上传数据包含can节点数据
+    CANFrame_STD canPreCmd[3][MAXDELAYLEN];  //CAN1预测命令
     uint32_t EChecksum;
     uint32_t FrameTailer;
 }EthPredFrame;

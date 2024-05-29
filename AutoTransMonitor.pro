@@ -26,6 +26,7 @@ SOURCES += \
 
 HEADERS += \
     FrameSheet.h \
+    cccControl.h \
     etherudp.h \
     mainwindow.h \
     pid.h \

@@ -14,6 +14,7 @@
 #include <QVariant>
 #include <complex>
 #include "pid.h"
+#include "cccControl.h"
 
 // 功能开关
 #define SerialPortEnable (0)    //串口默认关闭
@@ -27,7 +28,9 @@
 #define initFrameNum_TimeSync 0
 #define maxFrameNum_TimeSync 19999
 #define initFrameNum_SpeedGiven 20000
-#define maxFrameNum_SpeedGiven 39999
+#define maxFrameNum_SpeedGiven 29999
+#define initFrameNum_PosiFeed 30000
+#define maxFrameNum_PosiFeed 39999
 #define initFrameNum_SpeedPre 40000
 #define maxFrameNum_SpeedPre 59999
 
@@ -52,12 +55,8 @@ avgPosiRecord recordArray[maxStorageLen];
 PIDController pid;
 
 //通道数据接收
-uint16_t recPosiCnt_CH1 = 0;
-uint16_t recPosiCnt_CH2 = 0;
-uint16_t recPosiCnt_CH3 = 0;
-feedbackData laFData_CH1;
-feedbackData laFData_CH2;
-feedbackData laFData_CH3;
+uint16_t recPosiCnt_CH[3] = {0};
+feedbackData laFData_CH[3];
 uint32_t g_RecvTimeMS_CH1[maxStorageLen];   //存储反馈位置数据时间
 uint32_t g_RecvTimeMS_CH2[maxStorageLen];   //存储反馈位置数据时间
 uint32_t g_RecvTimeMS_CH3[maxStorageLen];   //存储反馈位置数据时间
@@ -65,13 +64,17 @@ feedbackData fDataPosi_CH1[maxStorageLen];       //存储反馈位置数据
 feedbackData fDataPosi_CH2[maxStorageLen];       //存储反馈位置数据
 feedbackData fDataPosi_CH3[maxStorageLen];       //存储反馈位置数据
 
-//时间同步报文帧号 0-19999
-volatile unsigned short g_FrameNum_CH[3] = {0};
-volatile unsigned short g_FrameNum_CH2 = 0;
+// 时间同步报文帧号 0-19999
+volatile unsigned short g_FrameNum_CH[3] = {initFrameNum_TimeSync,initFrameNum_TimeSync,initFrameNum_TimeSync};
+
+// 速度给定报文帧号 20000-29999
+volatile unsigned short g_speedGivenNum_CH[3] = {initFrameNum_SpeedGiven,initFrameNum_SpeedGiven,initFrameNum_SpeedGiven};
+
+// 位置反馈报文帧号 暂时 29999-39999
+volatile unsigned short g_PosiFeedNum_CH = initFrameNum_PosiFeed;
 
 //速度预测报文帧号 40000-59999
-volatile unsigned short g_PreFrameNum_CH1 = 40000;
-volatile unsigned short g_PreFrameNum_CH2 = 40000;
+volatile unsigned short g_PreFrameNum_CH[3] = {initFrameNum_SpeedPre, initFrameNum_SpeedPre, initFrameNum_SpeedPre};
 
 EthControlFrame sendUDPPack; //以太网报文头
 curTime curTimeStamp;
@@ -90,7 +93,7 @@ volatile unsigned int curToMs = 0;
 volatile unsigned int firstTimeMs = 0;
 volatile unsigned int refreshCnt = 0;
 
-//对端IP、Port
+// 对端IP、Port
 QString dst_IP = "192.168.1.30";
 int dst_Port = 8001;
 
@@ -132,7 +135,6 @@ MainWindow::MainWindow(QWidget *parent)
             this,SLOT(UpdateFeedbackSpeed1rpm(speedUpdateFormat)),Qt::AutoConnection);
     connect(localEthRecvTask,SIGNAL(UpdateSpeed_2(speedUpdateFormat)),
             this ,SLOT(UpdateFeedbackSpeed2rpm(speedUpdateFormat)),Qt::AutoConnection);
-
 
     //停止接收并销毁以太网线程
     connect(this, &MainWindow::destroyed, etherRecvThread, [=]()
@@ -231,7 +233,6 @@ MainWindow::~MainWindow()
 
 void MainWindow::initStyle()
 {
-    //加载样式表
     QFile file("C:/Users/WhiteKite2020/Desktop/styledemo/styledemo/other/qss/psblack.css");
     if (file.open(QFile::ReadOnly)) {
         QString qss = QLatin1String(file.readAll());
@@ -269,7 +270,6 @@ void MainWindow::sendTimeSyncSig()
 // 周期获取位置传感器反馈值 > 25ms
 void MainWindow::sendRequestSig()
 {
-    uint32_t curTimeStamp;
     CANFrame_STD canpack;
 
     //获取最新时间
@@ -280,17 +280,22 @@ void MainWindow::sendRequestSig()
     canpack.CANID.STDCANID.CTRCode = 0x05;          //时间同步报文分发
     canpack.CANID.STDCANID.NodeGroupID = 0x01;      //广播
 
-    canpack.CANData[0] = 0;
-    canpack.CANData[1] = 0;
+    canpack.CANData[0] = (g_PosiFeedNum_CH & 0xFF00) >> 8;
+    canpack.CANData[1] = g_PosiFeedNum_CH & 0x00FF;
 
     canpack.CANData[2] = (globalSynTime_ms >> 16) & 0xFF;
     canpack.CANData[3] = (globalSynTime_ms >> 8) & 0xFF;
     canpack.CANData[4] = globalSynTime_ms & 0xFF;
 
     packetSend(0x1F, 5, (unsigned char *)(&canpack));
+
+    g_PosiFeedNum_CH++;
+    if (g_PosiFeedNum_CH > maxFrameNum_PosiFeed) {
+       g_PosiFeedNum_CH = initFrameNum_PosiFeed;
+    }
 }
 
-//非预测速度给定
+//非预测速度给定(暂未使用)
 void MainWindow::sendGivenSpeedSig(unsigned char sendNo, short givenSpeed)       //发送单板速度给定
 {
     uint32_t curTimeStamp = globalSynTime_ms;
@@ -301,8 +306,8 @@ void MainWindow::sendGivenSpeedSig(unsigned char sendNo, short givenSpeed)      
     canpack.CANID.STDCANID.CTRCode = 0x01;      //速度给定报文分发
     canpack.CANID.STDCANID.NodeGroupID = sendNo;  //CAN ID=1
 
-    canpack.CANData[0] = (g_FrameNum_CH[0] & 0xFF00) >> 8;    //只有速度给定和速度反馈查询需要帧号，并且由于速度反馈是主从式的，所以帧号只能由PC端发起
-    canpack.CANData[1] = g_FrameNum_CH[0] & 0x00FF;
+//    canpack.CANData[0] = (g_speedGivenNum_CH[sendNo-1] & 0xFF00) >> 8;    //只有速度给定和速度反馈查询需要帧号，并且由于速度反馈是主从式的，所以帧号只能由PC端发起
+//    canpack.CANData[1] = g_speedGivenNum_CH[sendNo-1] & 0x00FF;
 
     //指向 data[2]
     memcpy(&(canpack.CANData[2]), &curTimeStamp, 3);
@@ -312,7 +317,11 @@ void MainWindow::sendGivenSpeedSig(unsigned char sendNo, short givenSpeed)      
     canpack.CANData[6] = givenSpeed & 0xFF;
 
     packetSend(sendNo, 1, (unsigned char *)(&canpack));
-    g_FrameNum_CH[0]++;
+
+//    g_speedGivenNum_CH[sendNo-1]++;
+//    if (g_speedGivenNum_CH[sendNo-1] > maxFrameNum_SpeedGiven) {
+//       g_speedGivenNum_CH[sendNo-1] = initFrameNum_SpeedGiven;
+//    }
 }
 
 //预测速度给定(未启用)
@@ -355,7 +364,6 @@ void MainWindow::onTimeout(unsigned int RecvCurTimeStamp_Ms)
     float givenSpeed = 0;
     static unsigned short pidCnt = 0;
 
-
     //刷新系统计时 500ms
     refreshCnt++;
     if(refreshCnt >= 500)
@@ -382,7 +390,7 @@ void MainWindow::onTimeout(unsigned int RecvCurTimeStamp_Ms)
 //    // 位置模式
 //    if (workMode == 1) {
 //        if (pidCnt >= 40) {
-//            givenSpeed = PIDController_Update(&pid, (float)posiRef, (float)(laFData_CH1.pulseCnt));
+//            givenSpeed = PIDController_Update(&pid, (float)posiRef, (float)(laFData_CH[0].pulseCnt));
 //            sendGivenSpeedSig(1, (short)givenSpeed);
 //            pidCnt =0;
 //        }
@@ -408,7 +416,7 @@ void MainWindow::on_timerSet_clicked()
     }
 }
 
-//子循环延时等待
+//子循环阻塞式延时等待
 uint16_t Delay_xms(uint16_t value)
 {
     QEventLoop loop;//定义一个新的事件循环
@@ -416,6 +424,16 @@ uint16_t Delay_xms(uint16_t value)
     loop.exec();//事件循环开始执行，程序会卡在这里，直到定时时间到，本循环被退出
     return 0;
 }
+
+// 非阻塞式等待，基于QTimer
+uint8_t nonblockingDelay_xms(uint32_t *lastTime, uint16_t delayMS)
+{
+    uint8_t ret = 0;
+
+
+    return ret;
+}
+
 
 //画刷设置
 void MainWindow::plotParaSetup()
@@ -477,7 +495,6 @@ void MainWindow::plotParaSetup()
     dataTimer->start(0); // Interval 0 means to refresh as fast as possible
 }
 
-//实时更新槽函数
 void MainWindow::realtimeDataSlot()
 {
     QString dispText;
@@ -492,7 +509,7 @@ void MainWindow::realtimeDataSlot()
     if (key-lastPointKey > 0.02) // at most add point every 20 ms
     {
         //反馈位置曲线
-        ui->speedRecord->graph(0)->addData(key, (int)(laFData_CH1.pulseCnt/PULSENUM));
+        ui->speedRecord->graph(0)->addData(key, (int)(laFData_CH[0].pulseCnt/PULSENUM));
 
         // rescale value (vertical) axis to fit the current data:
         ui->speedRecord->graph(0)->rescaleValueAxis(true);
@@ -559,8 +576,7 @@ void MainWindow::on_pushButton_4_clicked()
     ui->comboBox->clear();
     ui->comboBox_2->clear();
 
-    for(int i=0;i<curAvailablePortList.size();i++)
-    {
+    for(int i=0;i<curAvailablePortList.size();i++) {
         ui->comboBox->addItem(curAvailablePortList.at(i));
         ui->comboBox_2->addItem(curAvailablePortList.at(i));
     }
@@ -575,29 +591,24 @@ void MainWindow::on_pushButton_2_clicked()
     int connectedPortIndex = 0;
 
     //判断是否暂无连接
-    if(ui->pushButton_2->text() == "执行器1连接")
-    {
+    if(ui->pushButton_2->text() == "执行器1连接") {
         connectResult = speedCurTask_1->openPort(connectPortName, 500000); //500kbps连接
         //为避免重复，连接成功后在串口2的候选列表中设定对应串口号不可用，并且更改连接状态
-        if(connectResult == TRUE)
-        {
+        if(connectResult == TRUE) {
             ui->pushButton_2->setText("执行器1断开");
             connectedPortIndex = ui->comboBox_2->findText(connectPortName, Qt::MatchFixedString);
             ui->comboBox_2->removeItem(connectedPortIndex);
         }
-        else
-        {
+        else {
              QMessageBox::critical(0, "警告！", "串口1连接失败!",QMessageBox::Cancel);
         }
     }
-    else if(ui->pushButton_2->text() == "执行器1断开")
-    {
+    else if(ui->pushButton_2->text() == "执行器1断开") {
          speedCurTask_1->closePort();
          Delay_xms(10);
          ui->pushButton_2->setText("执行器1连接");
     }
-    else
-    {
+    else {
         QMessageBox::critical(0, "警告！", "串口1状态未知！",QMessageBox::Cancel);
     }
 }
@@ -611,29 +622,24 @@ void MainWindow::on_pushButton_3_clicked()
     int connectedPortIndex = 0;
 
     //判断是否暂无连接
-    if(ui->pushButton_3->text() == "执行器2连接")
-    {
+    if(ui->pushButton_3->text() == "执行器2连接") {
         connectResult = speedCurTask_2->openPort(connectPortName, 500000); //500kbps连接
         //为避免重复，连接成功后在串口1的候选列表中设定对应串口号不可用，并且更改连接状态
-        if(connectResult == TRUE)
-        {
+        if (connectResult == TRUE) {
             ui->pushButton_3->setText("执行器2断开");
             //搜索对应串口Index
             connectedPortIndex = ui->comboBox->findText(connectPortName, Qt::MatchFixedString);
             ui->comboBox->removeItem(connectedPortIndex);
         }
-        else
-        {
+        else {
              QMessageBox::critical(0, "警告！", "串口2连接失败!",QMessageBox::Cancel);
         }
     }
-    else if(ui->pushButton_3->text() == "执行器2断开")
-    {
+    else if (ui->pushButton_3->text() == "执行器2断开") {
          speedCurTask_2->closePort();
          ui->pushButton_3->setText("执行器2连接");
     }
-    else
-    {
+    else {
          QMessageBox::critical(0, "警告！", "串口2状态未知！",QMessageBox::Cancel);
     }
 }
@@ -673,7 +679,8 @@ void MainWindow::on_pushButton_5_clicked()
  * Etype =1: NPC预测控制
  * Etype =2: 时钟同步帧
  * Etpye =3: 周期获取位置反馈
- * Etype =4; 周期获取平均同步位置(单向定时上传，不下发)
+ * Etype =4: 周期获取平均同步位置(单向定时上传，不下发)
+ * Etype =0x1F: 存储数据上传
 */
 
 //发送报文:单条CAN包填充
@@ -741,9 +748,13 @@ qint64 MainWindow::packetSend(unsigned char sendNo, unsigned char NodeCmd, unsig
                 data[0] += 0x40;
                 sendSTHCtlPack.canEnable[cnt] = 1;
                 memcpy(&(sendSTHCtlPack.canCmd[cnt]), data, sizeof(CANFrame_STD));
+                sendSTHCtlPack.canCmd[cnt].CANData[2] = (globalSynTime_ms & 0xFF0000) >> 16;
+                sendSTHCtlPack.canCmd[cnt].CANData[3] = (globalSynTime_ms & 0x00FF00) >> 8;
+                sendSTHCtlPack.canCmd[cnt].CANData[4] = (globalSynTime_ms & 0x0000FF);
             }
             sendFlag = 1;
 
+            sendSTHCtlPack.sendTimeStamp = globalSynTime_ms;
             timeStamp[g_FrameNum_CH[0]] = globalSynTime_ms;
             g_FrameNum_CH[0]++;
         break;
@@ -757,8 +768,16 @@ qint64 MainWindow::packetSend(unsigned char sendNo, unsigned char NodeCmd, unsig
                 data[0] += 0x40;
                 sendSTHCtlPack.canEnable[cnt] = 1;
                 memcpy(&(sendSTHCtlPack.canCmd[cnt]), data, sizeof(CANFrame_STD));
+                sendSTHCtlPack.canCmd[cnt].CANData[2] = (globalSynTime_ms & 0xFF0000) >> 16;
+                sendSTHCtlPack.canCmd[cnt].CANData[3] = (globalSynTime_ms & 0x00FF00) >> 8;
+                sendSTHCtlPack.canCmd[cnt].CANData[4] = (globalSynTime_ms & 0x0000FF);
             }
             sendFlag =1;
+            sendSTHCtlPack.sendTimeStamp = globalSynTime_ms;
+        break;
+
+        case DATAUPLOAD: //传感器位置查询
+
         break;
 
         default:
@@ -819,60 +838,60 @@ void MainWindow::upreupdateJudge(unsigned char sendNo, feedbackData sampleData)
 {
     switch(sendNo) {
         case 1:
-            laFData_CH1.sampleTimeStamp = sampleData.sampleTimeStamp;
-            laFData_CH1.pulseCnt = sampleData.pulseCnt;
+            laFData_CH[0].sampleTimeStamp = sampleData.sampleTimeStamp;
+            laFData_CH[0].pulseCnt = sampleData.pulseCnt;
 
             if(sampleData.pulseCnt == 0) {
 
             } else {
-                if(recPosiCnt_CH1 >= maxStorageLen-1000) {
-                    recPosiCnt_CH1 = 0;
+                if(recPosiCnt_CH[0] >= maxStorageLen-1000) {
+                    recPosiCnt_CH[0] = 0;
                     QMessageBox::critical(0, "警告！", "接收数据1即将存储满，请及时存储到本地！",QMessageBox::Cancel);
                 }
 
-                g_RecvTimeMS_CH1[recPosiCnt_CH1] = globalSynTime_ms;
-                fDataPosi_CH1[recPosiCnt_CH1].pulseCnt = sampleData.pulseCnt;
+                g_RecvTimeMS_CH1[recPosiCnt_CH[0]] = globalSynTime_ms;
+                fDataPosi_CH1[recPosiCnt_CH[0]].pulseCnt = sampleData.pulseCnt;
                 ui->label_12->setText(QString::number(sampleData.pulseCnt, 10));
             }
-            recPosiCnt_CH1++;
+            recPosiCnt_CH[0]++;
 
         break;
 
         case 2:
-            laFData_CH2.sampleTimeStamp = sampleData.sampleTimeStamp;
-            laFData_CH2.pulseCnt = sampleData.pulseCnt;
+            laFData_CH[1].sampleTimeStamp = sampleData.sampleTimeStamp;
+            laFData_CH[1].pulseCnt = sampleData.pulseCnt;
 
             if(sampleData.pulseCnt == 0) {
 
             } else {
-                if(recPosiCnt_CH2 >= maxStorageLen-1000) {
-                    recPosiCnt_CH2 = 0;
+                if(recPosiCnt_CH[1] >= maxStorageLen-1000) {
+                    recPosiCnt_CH[1] = 0;
                     QMessageBox::critical(0, "警告！", "接收数据2即将存储满，请及时存储到本地！",QMessageBox::Cancel);
                 }
 
-                g_RecvTimeMS_CH2[recPosiCnt_CH2] = globalSynTime_ms;
-                fDataPosi_CH2[recPosiCnt_CH2].pulseCnt = sampleData.pulseCnt;
+                g_RecvTimeMS_CH2[recPosiCnt_CH[1]] = globalSynTime_ms;
+                fDataPosi_CH2[recPosiCnt_CH[1]].pulseCnt = sampleData.pulseCnt;
                 ui->label_13->setText(QString::number(sampleData.pulseCnt, 10));
             }
-            recPosiCnt_CH2++;
+            recPosiCnt_CH[1]++;
 
         case 3:
-            laFData_CH3.sampleTimeStamp = sampleData.sampleTimeStamp;
-            laFData_CH3.pulseCnt = sampleData.pulseCnt;
+            laFData_CH[2].sampleTimeStamp = sampleData.sampleTimeStamp;
+            laFData_CH[2].pulseCnt = sampleData.pulseCnt;
 
             if(sampleData.pulseCnt == 0) {
 
             } else {
-                if(recPosiCnt_CH3 >= maxStorageLen-1000) {
-                    recPosiCnt_CH3 = 0;
+                if(recPosiCnt_CH[2] >= maxStorageLen-1000) {
+                    recPosiCnt_CH[2] = 0;
                     QMessageBox::critical(0, "警告！", "接收数据3即将存储满，请及时存储到本地！",QMessageBox::Cancel);
                 }
 
-                g_RecvTimeMS_CH3[recPosiCnt_CH3] = globalSynTime_ms;
-                fDataPosi_CH3[recPosiCnt_CH3].pulseCnt = sampleData.pulseCnt;
+                g_RecvTimeMS_CH3[recPosiCnt_CH[2]] = globalSynTime_ms;
+                fDataPosi_CH3[recPosiCnt_CH[2]].pulseCnt = sampleData.pulseCnt;
                 ui->label_13->setText(QString::number(sampleData.pulseCnt, 10));
             }
-            recPosiCnt_CH3++;
+            recPosiCnt_CH[2]++;
 
         break;
         default:
@@ -945,7 +964,7 @@ void MainWindow::UpdateFeedbackSpeed2rpm(speedUpdateFormat curSpeedTime)
 
 }
 
-//同步启动
+//同步启动(暂未使用)
 void MainWindow::on_synStart_clicked()
 {
     volatile unsigned int cursendTime = 0;
@@ -975,6 +994,7 @@ void MainWindow::on_speedGiven_clicked()
 {
     uint32_t curTimeStamp;
     CANFrame_STD canpack;
+    uint8_t cnt =0;
 
     //获取最新时间
     currentTime =QTime::currentTime();
@@ -984,10 +1004,8 @@ void MainWindow::on_speedGiven_clicked()
     canpack.CANID.STDCANID.CTRCode = 0x01;
     canpack.CANID.STDCANID.Reserve = 0;
 
-//    canpack.CANData[0] = (g_FrameNum_CH1 & 0xFF00) >> 8;
-//    canpack.CANData[1] = g_FrameNum_CH1 & 0x00FF;
-    canpack.CANData[0] = 0;
-    canpack.CANData[1] = 0;
+    canpack.CANData[0] = (g_speedGivenNum_CH[0] & 0xFF00) >> 8;    //只有速度给定和速度反馈查询需要帧号，并且由于速度反馈是主从式的，所以帧号只能由PC端发起
+    canpack.CANData[1] = g_speedGivenNum_CH[0] & 0x00FF;
 
     memcpy(&(canpack.CANData[2]), &curTimeStamp,sizeof(curTimeStamp));
     canpack.CANData[5] = (ui->lineEdit->text().toInt() >> 8) & 0xFF;
@@ -995,6 +1013,11 @@ void MainWindow::on_speedGiven_clicked()
 
     canpack.CANID.STDCANID.NodeGroupID = 0x00;
     packetSend(0x1F, 1, (unsigned char *)(&canpack));
+
+    g_speedGivenNum_CH[0]++;
+    if (g_speedGivenNum_CH[0] > maxFrameNum_SpeedGiven) {
+       g_speedGivenNum_CH[0] = initFrameNum_SpeedGiven;
+    }
 }
 
 //0x1E 开启时钟同步报文分发
@@ -1096,8 +1119,7 @@ void MainWindow::on_pushButton_6_clicked()
     unsigned int curSendTimeStamp = globalSynTime_ms;
 
     //获取时间戳
-    for(int ii=0;ii<4;ii++)
-    {
+    for(int ii=0;ii<4;ii++) {
         data1[3-ii] = (uint8_t) (curSendTimeStamp & 0xFF);
         curSendTimeStamp >>= 8; //右移8位
     }
@@ -1117,22 +1139,18 @@ char* MainWindow::GetCuurentFilePath(void)
     QString dlgTitle;
     QString curPath;
     size_t FilePathLen;
-    while(1)
-    {
+    while(1) {
         curPath=QDir::currentPath();// get current system path
         dlgTitle="打开一个文件";
         filter="所有文件(*.*)"; //文件过滤器
         aFileName=QFileDialog::getOpenFileName(this,dlgTitle,curPath,filter);
-        if(!aFileName.isEmpty())
-        {
+        if(!aFileName.isEmpty()) {
             FilePathLen = aFileName.size();
             char* FilePath = (char*)malloc(sizeof(char) * (FilePathLen+1));//allocate memory
             QByteArray ba = aFileName.toLatin1();
             strcpy(FilePath, ba.data());
             return FilePath;
-        }
-        else
-        {
+        } else {
             QString dlgTitle="Warning";
             QString strInfo="You haven't chose a file, do you want to exit？";
 
@@ -1143,12 +1161,10 @@ char* MainWindow::GetCuurentFilePath(void)
                               QMessageBox::Yes|QMessageBox::No,
                               defaultBtn);
 
-            if(result==QMessageBox::No)
-            {
+            if(result==QMessageBox::No) {
                 continue;
             }
-            else
-            {
+            else {
                 return NULL;
             }
         }
@@ -1166,9 +1182,9 @@ short* posiRefCal(unsigned int dstPosiIncre) {
 void MainWindow::on_PosiLoopInit_clicked()
 {
     //1、获取初始位置:以最近一次获取到的脉冲数为基本值
-    ui->label_12->setText(QString::number(laFData_CH1.pulseCnt, 10));
-    ui->label_13->setText(QString::number(laFData_CH2.pulseCnt, 10));
-    ui->label_13->setText(QString::number(laFData_CH3.pulseCnt, 10));
+    ui->label_12->setText(QString::number(laFData_CH[0].pulseCnt, 10));
+    ui->label_13->setText(QString::number(laFData_CH[1].pulseCnt, 10));
+    ui->label_13->setText(QString::number(laFData_CH[2].pulseCnt, 10));
 
     //终态参考位移给定
     posiRef = ui->refPosiSig->text().toInt();
@@ -1203,7 +1219,7 @@ void MainWindow::on_StorePMSM1_clicked()
     out << tr("全局时间戳,") << tr("PMSM1反馈位置,") << ",\n";
 
     //写入内容
-    for(int i = 0; i < recPosiCnt_CH1; i++)//写入10行
+    for(int i = 0; i < recPosiCnt_CH[0]; i++)//写入10行
     {
         out << g_RecvTimeMS_CH1[i] << "," << fDataPosi_CH1[i].pulseCnt << "\n";
     }
@@ -1233,7 +1249,7 @@ void MainWindow::on_StorePMSM2_clicked()
     out << tr("全局时间戳,") << tr("PMSM2反馈位置,") << ",\n";
 
     //写入内容
-    for(int i = 0; i < recPosiCnt_CH2; i++)//写入10行
+    for(int i = 0; i < recPosiCnt_CH[1]; i++)//写入10行
     {
         out << g_RecvTimeMS_CH2[i] << "," << fDataPosi_CH2[i].pulseCnt << "\n";
     }
@@ -1242,34 +1258,28 @@ void MainWindow::on_StorePMSM2_clicked()
     file.close();
 }
 
-void MainWindow::on_StorePMSM3_clicked()
+/* 交叉耦合同步控制 */
+uint8_t crossCouplingSync_Init(SYNCON *cccStruct)
 {
-    //获取创建的csv文件名
-    QString fileName = QFileDialog::getSaveFileName(this, tr("Excel file"), "" ,tr("Files (*.csv)"));
-    if (fileName.isEmpty())
-        return;
+   uint8_t duss_result = 0;
 
-    //打开.csv文件
-    QFile file(fileName);
-    if(!file.open(QIODevice::WriteOnly | QIODevice::Text))
-    {
-        qDebug("Cannot open file for writing: %s",qPrintable(file.errorString()));
-        return;
-    }
-    QTextStream out(&file);
 
-    //创建表头
-    out << tr("全局时间戳,") << tr("PMSM3反馈位置,") << ",\n";
 
-    //写入内容
-    for(int i = 0; i < recPosiCnt_CH3; i++)//写入10行
-    {
-        out << g_RecvTimeMS_CH3[i] << "," << fDataPosi_CH3[i].pulseCnt << "\n";
-    }
 
-    //关闭文件
-    file.close();
+
+
+   return duss_result;
 }
 
+// 交叉耦合同步更新
+uint8_t crossCouplingSync_Update()
+{
+   uint8_t duss_result = 0;
 
-/* 控制算法 */
+
+
+
+
+
+   return duss_result;
+}

@@ -36,9 +36,9 @@
     <property name="geometry">
      <rect>
       <x>23</x>
-      <y>185</y>
+      <y>225</y>
       <width>761</width>
-      <height>601</height>
+      <height>561</height>
      </rect>
     </property>
     <property name="sizePolicy">
@@ -102,14 +102,14 @@
           <item row="0" column="0">
            <widget class="QPushButton" name="pushButton_5">
             <property name="text">
-             <string>启动控制通讯</string>
+             <string>启动轮询</string>
             </property>
            </widget>
           </item>
           <item row="0" column="1">
            <widget class="QLabel" name="label_3">
             <property name="text">
-             <string>预设参考速度：</string>
+             <string>预设参考速度(rpm)：</string>
             </property>
            </widget>
           </item>
@@ -128,7 +128,7 @@
              </size>
             </property>
             <property name="text">
-             <string>1000</string>
+             <string>400</string>
             </property>
            </widget>
           </item>
@@ -195,7 +195,7 @@
       <x>23</x>
       <y>12</y>
       <width>761</width>
-      <height>151</height>
+      <height>201</height>
      </rect>
     </property>
     <property name="sizePolicy">
@@ -219,7 +219,7 @@
        <x>11</x>
        <y>21</y>
        <width>727</width>
-       <height>123</height>
+       <height>171</height>
       </rect>
      </property>
      <layout class="QGridLayout" name="gridLayout_2">
@@ -264,16 +264,9 @@
          </property>
          <layout class="QVBoxLayout" name="verticalLayout_4">
           <item>
-           <widget class="QPushButton" name="pushButton">
+           <widget class="QPushButton" name="pushButton_11">
             <property name="text">
-             <string>开启预测补偿</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="pushButton_4">
-            <property name="text">
-             <string>扫描可连接对象</string>
+             <string>开机自检</string>
             </property>
            </widget>
           </item>
@@ -284,126 +277,21 @@
             </property>
            </widget>
           </item>
-         </layout>
-        </widget>
-       </widget>
-      </item>
-      <item row="0" column="2">
-       <spacer name="horizontalSpacer_3">
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
-        <property name="sizeHint" stdset="0">
-         <size>
-          <width>18</width>
-          <height>20</height>
-         </size>
-        </property>
-       </spacer>
-      </item>
-      <item row="0" column="3">
-       <widget class="QGroupBox" name="groupBox_3">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="minimumSize">
-         <size>
-          <width>320</width>
-          <height>121</height>
-         </size>
-        </property>
-        <property name="title">
-         <string>对象连接</string>
-        </property>
-        <widget class="QWidget" name="layoutWidget">
-         <property name="geometry">
-          <rect>
-           <x>10</x>
-           <y>23</y>
-           <width>292</width>
-           <height>91</height>
-          </rect>
-         </property>
-         <layout class="QGridLayout" name="gridLayout">
-          <item row="0" column="0">
-           <widget class="QLabel" name="label">
+          <item>
+           <widget class="QPushButton" name="pushButton">
             <property name="text">
-             <string>电机1：</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="1">
-           <widget class="QComboBox" name="comboBox"/>
-          </item>
-          <item row="0" column="2">
-           <widget class="QPushButton" name="pushButton_2">
-            <property name="text">
-             <string>执行器1连接</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="0">
-           <widget class="QLabel" name="label_2">
-            <property name="text">
-             <string>电机2：</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="1">
-           <widget class="QComboBox" name="comboBox_2"/>
-          </item>
-          <item row="1" column="2">
-           <widget class="QPushButton" name="pushButton_3">
-            <property name="text">
-             <string>执行器2连接</string>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="0">
-           <widget class="QLabel" name="label_8">
-            <property name="text">
-             <string>平均时延(ms):</string>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="1">
-           <widget class="QLabel" name="label_9">
-            <property name="text">
-             <string>0</string>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="2">
-           <widget class="QLabel" name="label_10">
-            <property name="text">
-             <string>0</string>
+             <string>开启预测补偿</string>
             </property>
            </widget>
           </item>
          </layout>
         </widget>
        </widget>
-      </item>
-      <item row="0" column="4">
-       <spacer name="horizontalSpacer_4">
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
-        <property name="sizeHint" stdset="0">
-         <size>
-          <width>17</width>
-          <height>20</height>
-         </size>
-        </property>
-       </spacer>
       </item>
       <item row="0" column="5">
        <widget class="QGroupBox" name="groupBox_4">
         <property name="sizePolicy">
-         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+         <sizepolicy hsizetype="Fixed" vsizetype="Expanding">
           <horstretch>0</horstretch>
           <verstretch>0</verstretch>
          </sizepolicy>
@@ -415,7 +303,7 @@
          </size>
         </property>
         <property name="title">
-         <string>本地计时</string>
+         <string>本地UTC计时</string>
         </property>
         <widget class="QPushButton" name="timerSet">
          <property name="geometry">
@@ -471,6 +359,19 @@
         </widget>
        </widget>
       </item>
+      <item row="0" column="2">
+       <spacer name="horizontalSpacer_3">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>18</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
       <item row="0" column="6">
        <spacer name="horizontalSpacer">
         <property name="orientation">
@@ -484,16 +385,128 @@
         </property>
        </spacer>
       </item>
+      <item row="0" column="4">
+       <spacer name="horizontalSpacer_4">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>17</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item row="0" column="3">
+       <widget class="QGroupBox" name="groupBox_3">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Expanding">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>320</width>
+          <height>121</height>
+         </size>
+        </property>
+        <property name="title">
+         <string>CAS串口监控连接</string>
+        </property>
+        <widget class="QWidget" name="layoutWidget">
+         <property name="geometry">
+          <rect>
+           <x>10</x>
+           <y>23</y>
+           <width>311</width>
+           <height>108</height>
+          </rect>
+         </property>
+         <layout class="QGridLayout" name="gridLayout">
+          <item row="4" column="2">
+           <widget class="QLabel" name="label_10">
+            <property name="text">
+             <string>0</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0">
+           <widget class="QLabel" name="label_2">
+            <property name="text">
+             <string>电机2：</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="1">
+           <widget class="QLabel" name="label_9">
+            <property name="text">
+             <string>0</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QComboBox" name="comboBox"/>
+          </item>
+          <item row="4" column="0">
+           <widget class="QLabel" name="label_8">
+            <property name="text">
+             <string>平均时延(ms):</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="label">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string>电机1：</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="2">
+           <widget class="QPushButton" name="pushButton_3">
+            <property name="text">
+             <string>执行器2连接</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="1">
+           <widget class="QComboBox" name="comboBox_2"/>
+          </item>
+          <item row="2" column="2">
+           <widget class="QPushButton" name="pushButton_2">
+            <property name="text">
+             <string>执行器1连接</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QPushButton" name="pushButton_4">
+            <property name="text">
+             <string>扫描可连接对象</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </widget>
+      </item>
      </layout>
     </widget>
    </widget>
    <widget class="QGroupBox" name="groupBox_7">
     <property name="geometry">
      <rect>
-      <x>814</x>
-      <y>12</y>
-      <width>251</width>
-      <height>151</height>
+      <x>800</x>
+      <y>20</y>
+      <width>261</width>
+      <height>191</height>
      </rect>
     </property>
     <property name="sizePolicy">
@@ -509,56 +522,65 @@
      </size>
     </property>
     <property name="title">
-     <string>数据存储</string>
+     <string>数据读取及存储</string>
     </property>
-    <widget class="QWidget" name="layoutWidget">
-     <property name="geometry">
-      <rect>
-       <x>21</x>
-       <y>30</y>
-       <width>201</width>
-       <height>98</height>
-      </rect>
-     </property>
-     <layout class="QGridLayout" name="gridLayout_5">
-      <item row="0" column="0" colspan="2">
-       <widget class="QPushButton" name="pushButton_6">
-        <property name="text">
-         <string>请求读取</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="0" colspan="2">
-       <widget class="QPushButton" name="StorePMSM1">
-        <property name="text">
-         <string>读取PMSM1</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="0">
-       <widget class="QPushButton" name="StorePMSM2">
-        <property name="text">
-         <string>读取PMSM2</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="1">
-       <widget class="QPushButton" name="StorePMSM3">
-        <property name="text">
-         <string>读取PMSM3</string>
-        </property>
-       </widget>
-      </item>
-     </layout>
-    </widget>
+    <layout class="QVBoxLayout" name="verticalLayout_3">
+     <item>
+      <widget class="QPushButton" name="pushButton_6">
+       <property name="text">
+        <string>请求读取</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="StorePMSM1">
+       <property name="text">
+        <string>读取PMSM1</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="StorePMSM2">
+       <property name="text">
+        <string>读取PMSM2</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="label_30">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="text">
+        <string>读取状态:</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="label_29">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+     </item>
+    </layout>
    </widget>
    <widget class="QGroupBox" name="groupBox_8">
     <property name="geometry">
      <rect>
-      <x>830</x>
-      <y>190</y>
-      <width>231</width>
-      <height>251</height>
+      <x>810</x>
+      <y>230</y>
+      <width>251</width>
+      <height>221</height>
      </rect>
     </property>
     <property name="sizePolicy">
@@ -586,43 +608,16 @@
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>25</y>
-       <width>201</width>
-       <height>191</height>
+       <y>30</y>
+       <width>225</width>
+       <height>211</height>
       </rect>
      </property>
      <layout class="QGridLayout" name="gridLayout_6">
-      <item row="0" column="0" colspan="2">
-       <widget class="QLabel" name="label_24">
+      <item row="4" column="1">
+       <widget class="QPushButton" name="PosiLoopInit_2">
         <property name="text">
-         <string>给定同步位移(PULSE)：</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="0" colspan="2">
-       <widget class="QLineEdit" name="refPosiSig"/>
-      </item>
-      <item row="2" column="0">
-       <widget class="QLabel" name="label_26">
-        <property name="text">
-         <string>PMSM1位移(PULSE)</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="1">
-       <widget class="QLabel" name="label_12">
-        <property name="text">
-         <string>0</string>
-        </property>
-        <property name="alignment">
-         <set>Qt::AlignCenter</set>
-        </property>
-       </widget>
-      </item>
-      <item row="3" column="0">
-       <widget class="QLabel" name="label_27">
-        <property name="text">
-         <string>PMSM2位移(PULSE)</string>
+         <string>紧急制动</string>
         </property>
        </widget>
       </item>
@@ -637,14 +632,52 @@
        </widget>
       </item>
       <item row="4" column="0">
-       <widget class="QLabel" name="label_28">
+       <widget class="QPushButton" name="PosiLoopInit">
         <property name="text">
-         <string>PMSM3位移(PULSE)</string>
+         <string>位置环启动</string>
         </property>
        </widget>
       </item>
-      <item row="4" column="1">
-       <widget class="QLabel" name="label_14">
+      <item row="7" column="0">
+       <widget class="QLabel" name="label_7">
+        <property name="text">
+         <string>0</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="label_26">
+        <property name="text">
+         <string>PMSM1位移(um)</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="0" colspan="2">
+       <widget class="QLabel" name="label_24">
+        <property name="text">
+         <string>给定位移增量(um)：</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0" colspan="2">
+       <widget class="QLineEdit" name="refPosiSig"/>
+      </item>
+      <item row="3" column="0">
+       <widget class="QLabel" name="label_27">
+        <property name="text">
+         <string>PMSM2位移(um)</string>
+        </property>
+       </widget>
+      </item>
+      <item row="7" column="1">
+       <widget class="QLabel" name="label_11">
+        <property name="text">
+         <string>0</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QLabel" name="label_12">
         <property name="text">
          <string>0</string>
         </property>
@@ -654,9 +687,16 @@
        </widget>
       </item>
       <item row="5" column="0">
-       <widget class="QPushButton" name="PosiLoopInit">
+       <widget class="QLabel" name="label_25">
         <property name="text">
-         <string>位置环启动</string>
+         <string>电机1实时电流(A)</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="1">
+       <widget class="QLabel" name="label_28">
+        <property name="text">
+         <string>电机2实时电流(A)</string>
         </property>
        </widget>
       </item>
@@ -667,9 +707,9 @@
     <property name="geometry">
      <rect>
       <x>810</x>
-      <y>460</y>
+      <y>500</y>
       <width>251</width>
-      <height>301</height>
+      <height>261</height>
      </rect>
     </property>
     <property name="sizePolicy">
@@ -691,22 +731,22 @@
      </size>
     </property>
     <property name="title">
-     <string>同步过程控制</string>
+     <string>同步数据记录控制</string>
     </property>
-    <widget class="QWidget" name="">
+    <widget class="QWidget" name="layoutWidget">
      <property name="geometry">
       <rect>
        <x>10</x>
        <y>20</y>
-       <width>208</width>
-       <height>121</height>
+       <width>231</width>
+       <height>101</height>
       </rect>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_2">
       <item>
        <widget class="QLabel" name="label_21">
         <property name="text">
-         <string>实时平均同步位移：</string>
+         <string>实时同步偏转角(°)：</string>
         </property>
        </widget>
       </item>
@@ -722,6 +762,9 @@
       </item>
       <item>
        <layout class="QGridLayout" name="gridLayout_3">
+        <item row="0" column="1">
+         <widget class="QLineEdit" name="lineEdit_12"/>
+        </item>
         <item row="0" column="0">
          <widget class="QLabel" name="label_22">
           <property name="text">
@@ -729,8 +772,8 @@
           </property>
          </widget>
         </item>
-        <item row="0" column="1">
-         <widget class="QLineEdit" name="lineEdit_12"/>
+        <item row="1" column="1">
+         <widget class="QLineEdit" name="lineEdit_13"/>
         </item>
         <item row="1" column="0">
          <widget class="QLabel" name="label_23">
@@ -738,19 +781,6 @@
            <string>终端误差2：</string>
           </property>
          </widget>
-        </item>
-        <item row="1" column="1">
-         <widget class="QLineEdit" name="lineEdit_13"/>
-        </item>
-        <item row="2" column="0">
-         <widget class="QLabel" name="label_25">
-          <property name="text">
-           <string>终端误差3：</string>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="1">
-         <widget class="QLineEdit" name="lineEdit_15"/>
         </item>
        </layout>
       </item>
@@ -764,7 +794,7 @@
      <x>0</x>
      <y>0</y>
      <width>1141</width>
-     <height>26</height>
+     <height>21</height>
     </rect>
    </property>
   </widget>
