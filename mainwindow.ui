@@ -259,7 +259,7 @@
            <x>10</x>
            <y>20</y>
            <width>131</width>
-           <height>98</height>
+           <height>116</height>
           </rect>
          </property>
          <layout class="QVBoxLayout" name="verticalLayout_4">
@@ -580,7 +580,7 @@
       <x>810</x>
       <y>230</y>
       <width>251</width>
-      <height>221</height>
+      <height>261</height>
      </rect>
     </property>
     <property name="sizePolicy">
@@ -707,9 +707,9 @@
     <property name="geometry">
      <rect>
       <x>810</x>
-      <y>500</y>
+      <y>510</y>
       <width>251</width>
-      <height>261</height>
+      <height>281</height>
      </rect>
     </property>
     <property name="sizePolicy">
@@ -731,58 +731,110 @@
      </size>
     </property>
     <property name="title">
-     <string>同步数据记录控制</string>
+     <string>系统运行模式控制</string>
     </property>
-    <widget class="QWidget" name="layoutWidget">
+    <widget class="QWidget" name="">
      <property name="geometry">
       <rect>
-       <x>10</x>
-       <y>20</y>
-       <width>231</width>
-       <height>101</height>
+       <x>20</x>
+       <y>40</y>
+       <width>211</width>
+       <height>141</height>
       </rect>
      </property>
-     <layout class="QVBoxLayout" name="verticalLayout_2">
-      <item>
-       <widget class="QLabel" name="label_21">
+     <layout class="QFormLayout" name="formLayout">
+      <item row="0" column="0">
+       <widget class="QLabel" name="label_31">
         <property name="text">
-         <string>实时同步偏转角(°)：</string>
+         <string>电机1运行模式</string>
         </property>
        </widget>
       </item>
-      <item>
-       <widget class="QLabel" name="avgPosi">
-        <property name="text">
-         <string>0</string>
+      <item row="0" column="1">
+       <widget class="QComboBox" name="comboBox_3">
+        <property name="editable">
+         <bool>false</bool>
         </property>
-        <property name="alignment">
-         <set>Qt::AlignCenter</set>
+        <item>
+         <property name="text">
+          <string>3</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>4</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>1</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>0</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QCheckBox" name="checkBox">
+        <property name="text">
+         <string>电机1使能</string>
         </property>
        </widget>
       </item>
-      <item>
-       <layout class="QGridLayout" name="gridLayout_3">
-        <item row="0" column="1">
-         <widget class="QLineEdit" name="lineEdit_12"/>
+      <item row="1" column="1">
+       <widget class="QPushButton" name="StorePMSM2_2">
+        <property name="text">
+         <string>电机1设置</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="label_32">
+        <property name="text">
+         <string>电机2运行模式</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QComboBox" name="comboBox_4">
+        <item>
+         <property name="text">
+          <string>3</string>
+         </property>
         </item>
-        <item row="0" column="0">
-         <widget class="QLabel" name="label_22">
-          <property name="text">
-           <string>终端误差1：</string>
-          </property>
-         </widget>
+        <item>
+         <property name="text">
+          <string>4</string>
+         </property>
         </item>
-        <item row="1" column="1">
-         <widget class="QLineEdit" name="lineEdit_13"/>
+        <item>
+         <property name="text">
+          <string>1</string>
+         </property>
         </item>
-        <item row="1" column="0">
-         <widget class="QLabel" name="label_23">
-          <property name="text">
-           <string>终端误差2：</string>
-          </property>
-         </widget>
+        <item>
+         <property name="text">
+          <string>0</string>
+         </property>
         </item>
-       </layout>
+       </widget>
+      </item>
+      <item row="3" column="0">
+       <widget class="QCheckBox" name="checkBox_2">
+        <property name="text">
+         <string>电机2使能</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="1">
+       <widget class="QPushButton" name="StorePMSM2_3">
+        <property name="text">
+         <string>电机2设置</string>
+        </property>
+       </widget>
       </item>
      </layout>
     </widget>

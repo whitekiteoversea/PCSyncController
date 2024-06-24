@@ -83,7 +83,8 @@ private slots:
     void on_PosiLoopInit_clicked();
     void on_StorePMSM2_clicked();
     void on_StorePMSM1_clicked();
-    void on_StorePMSM3_clicked();
+    void on_StorePMSM2_2_clicked();
+
 private:
     Ui::MainWindow *ui;
     QTimer *dataTimer;

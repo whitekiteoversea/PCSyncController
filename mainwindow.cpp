@@ -40,6 +40,10 @@
 //可用串口列表
 QStringList *availbleSerialPort;
 
+
+// 单机通信测试 0  or ETH-CAS 通信 1
+volatile unsigned char curAlgoMode = 0;
+
 //工作模式
 unsigned char workMode= 0;  // 0:默认模式;1:位置曲线控制;2:同步控制
 short *refPosiArray = NULL; //获取
@@ -66,13 +70,10 @@ feedbackData fDataPosi_CH3[maxStorageLen];       //存储反馈位置数据
 
 // 时间同步报文帧号 0-19999
 volatile unsigned short g_FrameNum_CH[3] = {initFrameNum_TimeSync,initFrameNum_TimeSync,initFrameNum_TimeSync};
-
 // 速度给定报文帧号 20000-29999
 volatile unsigned short g_speedGivenNum_CH[3] = {initFrameNum_SpeedGiven,initFrameNum_SpeedGiven,initFrameNum_SpeedGiven};
-
 // 位置反馈报文帧号 暂时 29999-39999
 volatile unsigned short g_PosiFeedNum_CH = initFrameNum_PosiFeed;
-
 //速度预测报文帧号 40000-59999
 volatile unsigned short g_PreFrameNum_CH[3] = {initFrameNum_SpeedPre, initFrameNum_SpeedPre, initFrameNum_SpeedPre};
 
@@ -94,6 +95,9 @@ volatile unsigned int firstTimeMs = 0;
 volatile unsigned int refreshCnt = 0;
 
 // 对端IP、Port
+QString dst_CASIP[2] = {"192.168.20.11","192.168.20.12"};
+int dst_CASPort[2] = {8001,8002};
+
 QString dst_IP = "192.168.1.30";
 int dst_Port = 8001;
 
@@ -687,124 +691,158 @@ void MainWindow::on_pushButton_5_clicked()
 qint64 MainWindow::packetSend(unsigned char sendNo, unsigned char NodeCmd, unsigned char *data)   //以太网报文发送
 {
     EthControlFrame sendSTHCtlPack; //普通指令，控制帧
+
+    EthControlFrameSingleCAS PC2CASFrame; //直接面对CAS
     EthPredFrame sendETHPack; //预测指令，控制帧
     qint64 sendResult = 0;
     uint8_t sendFlag =0;
     uint8_t SendBuffer[500] = {0};
     uint8_t cnt =0;
 
-    memset(&sendSTHCtlPack, 0, sizeof(sendSTHCtlPack));
-    memset(&sendETHPack, 0, sizeof(sendETHPack));
+    if (curAlgoMode == 0) { // ToCAS
+        memset(&PC2CASFrame, 0, sizeof(PC2CASFrame));
+        memcpy(&(PC2CASFrame.canpack), data, sizeof(CANFrame_STD));
 
-    switch(NodeCmd)
-    {
-        //速度给定(无预测)
-        case 1:
-            sendSTHCtlPack.EType = 0x01;
-            if (sendNo >= 1 &&sendNo <= 3) {
-                memcpy(&(sendSTHCtlPack.canCmd[sendNo-1]), data, sizeof(CANFrame_STD));
-                sendSTHCtlPack.canEnable[sendNo-1] = 1;
-            } else if (sendNo == 0x1F) {
-                for (cnt=0; cnt<3; cnt++) {
+        PC2CASFrame.EHeader = 0xAA55;
+        PC2CASFrame.FrameTailer = 0x55AA;
+        PC2CASFrame.EType = 0x03;  //速度给定，这里与CAN对应
+        PC2CASFrame.ELen = sizeof(PC2CASFrame);
+
+        memset(SendBuffer, 0, sizeof(SendBuffer));
+        memcpy(SendBuffer, &PC2CASFrame,sizeof(PC2CASFrame));
+
+        if (ui->checkBox->isChecked())
+            sendResult = sendSocket->writeDatagram((char *)SendBuffer, sizeof(PC2CASFrame), QHostAddress(dst_CASIP[0]), dst_CASPort[0]);
+        if (ui->checkBox_2->isChecked())
+            sendResult = sendSocket->writeDatagram((char *)SendBuffer, sizeof(PC2CASFrame), QHostAddress(dst_CASIP[1]), dst_CASPort[1]);
+
+    } else if (curAlgoMode == 1) { //To ETH2CAS
+        memset(&sendSTHCtlPack, 0, sizeof(sendSTHCtlPack));
+        memset(&sendETHPack, 0, sizeof(sendETHPack));
+
+        switch(NodeCmd)
+        {
+            //速度给定(无预测)
+            case SPEEDCMD:
+                sendSTHCtlPack.EType = 0x01;
+                if (sendNo >= 1 &&sendNo <= MAXCASNODENUM) {
+                    memcpy(&(sendSTHCtlPack.canCmd[sendNo-1]), data, sizeof(CANFrame_STD));
+                    sendSTHCtlPack.canEnable[sendNo-1] = 1;
+                } else if (sendNo == 0x1F) {
+                    for (cnt=0; cnt<MAXCASNODENUM; cnt++) {
+                        data[0] += 0x40;
+                        memcpy(&(sendSTHCtlPack.canCmd[cnt]), data, sizeof(CANFrame_STD));
+                        sendSTHCtlPack.canEnable[cnt] = 1;
+                    }
+                } else {
+                    qDebug() << "Error CANPack Num\n";
+                }
+                // 更新发送时间
+                sendSTHCtlPack.sendTimeStamp = globalSynTime_ms;
+                sendFlag = 1;
+            break;
+
+            //速度给定预测
+            case PRESPEED:
+                sendETHPack.EType = 0x02;
+                sendETHPack.can_preLen[0] =10;
+                sendETHPack.can_preLen[1] =10;
+                sendETHPack.ETotalPackNum = 20;
+                if (sendNo >= 1 && sendNo <= MAXCASNODENUM) {
+                    sendETHPack.ENum = g_FrameNum_CH[sendNo-1];
+                    sendSTHCtlPack.canEnable[sendNo-1] = 1;
+                    memcpy(sendETHPack.canPreCmd[sendNo-1], data, sizeof(CANFrame_STD)*10);
+                } else if (sendNo == 0x1F) {
+                    for (cnt = 0; cnt <MAXCASNODENUM; cnt++) {
+                        memcpy(&(sendSTHCtlPack.canCmd[cnt]), data, sizeof(CANFrame_STD));
+                        sendSTHCtlPack.canEnable[cnt] = 1;
+                    }
+                } else {
+                     qDebug() << "Error CANPack Num\n";
+                }
+                sendFlag = 2;
+            break;
+
+            case TIMESYNC: //时间同步分发
+                sendSTHCtlPack.EHeader = 0xAA55;
+                sendSTHCtlPack.ENum = g_FrameNum_CH[0]; //暂时用CH1的帧号
+                sendSTHCtlPack.EType = 0x04;
+
+                for (cnt=0;cnt<MAXCASNODENUM; cnt++) {
                     data[0] += 0x40;
-                    memcpy(&(sendSTHCtlPack.canCmd[cnt]), data, sizeof(CANFrame_STD));
                     sendSTHCtlPack.canEnable[cnt] = 1;
-                }
-            } else {
-                qDebug() << "Error CANPack Num\n";
-            }
-            // 更新发送时间
-            sendSTHCtlPack.sendTimeStamp = globalSynTime_ms;
-            sendFlag = 1;
-        break;
-
-        //速度给定预测
-        case 2:
-            sendETHPack.EType = 0x02;
-            sendETHPack.can_preLen[0] =10;
-            sendETHPack.can_preLen[1] =10;
-            sendETHPack.ETotalPackNum = 20;
-            if (sendNo >= 1 && sendNo <= 3) {
-                sendETHPack.ENum = g_FrameNum_CH[sendNo-1];
-                sendSTHCtlPack.canEnable[sendNo-1] = 1;
-                memcpy(sendETHPack.canPreCmd[sendNo-1], data, sizeof(CANFrame_STD)*10);
-            } else if (sendNo == 0x1F) {
-                for (cnt = 0; cnt <3; cnt++) {
                     memcpy(&(sendSTHCtlPack.canCmd[cnt]), data, sizeof(CANFrame_STD));
-                    sendSTHCtlPack.canEnable[cnt] = 1;
+                    sendSTHCtlPack.canCmd[cnt].CANData[2] = (globalSynTime_ms & 0xFF0000) >> 16;
+                    sendSTHCtlPack.canCmd[cnt].CANData[3] = (globalSynTime_ms & 0x00FF00) >> 8;
+                    sendSTHCtlPack.canCmd[cnt].CANData[4] = (globalSynTime_ms & 0x0000FF);
                 }
-            } else {
-                 qDebug() << "Error CANPack Num\n";
-            }
-            sendFlag = 2;
-        break;
+                sendFlag = 1;
 
-        case 4: //时间同步分发
+                sendSTHCtlPack.sendTimeStamp = globalSynTime_ms;
+                timeStamp[g_FrameNum_CH[0]] = globalSynTime_ms;
+                g_FrameNum_CH[0]++;
+            break;
+
+            case 5: //传感器位置查询
+                sendSTHCtlPack.EHeader = 0xAA55;
+                sendSTHCtlPack.ENum = 0; //暂时用CH1的帧号
+                sendSTHCtlPack.EType = 0x05;
+
+                for (cnt = 0;cnt<MAXCASNODENUM; cnt++) {
+                    data[0] += 0x40;
+                    sendSTHCtlPack.canEnable[cnt] = 1;
+                    memcpy(&(sendSTHCtlPack.canCmd[cnt]), data, sizeof(CANFrame_STD));
+                    sendSTHCtlPack.canCmd[cnt].CANData[2] = (globalSynTime_ms & 0xFF0000) >> 16;
+                    sendSTHCtlPack.canCmd[cnt].CANData[3] = (globalSynTime_ms & 0x00FF00) >> 8;
+                    sendSTHCtlPack.canCmd[cnt].CANData[4] = (globalSynTime_ms & 0x0000FF);
+                }
+                sendFlag =1;
+                sendSTHCtlPack.sendTimeStamp = globalSynTime_ms;
+            break;
+
+            case DATAUPLOAD: //传感器位置数据上报请求
+                sendSTHCtlPack.EHeader = 0xAA55;
+                sendSTHCtlPack.ENum = 0; //暂时用CH1的帧号
+                sendSTHCtlPack.EType = DATAUPLOAD;
+
+                for (cnt = 0;cnt<MAXCASNODENUM; cnt++) {
+                        data[0] += 0x40;
+                        sendSTHCtlPack.canEnable[cnt] = 1;
+                        memcpy(&(sendSTHCtlPack.canCmd[cnt]), data, sizeof(CANFrame_STD));
+                        sendSTHCtlPack.canCmd[cnt].CANData[2] = (globalSynTime_ms & 0xFF0000) >> 16;
+                        sendSTHCtlPack.canCmd[cnt].CANData[3] = (globalSynTime_ms & 0x00FF00) >> 8;
+                        sendSTHCtlPack.canCmd[cnt].CANData[4] = (globalSynTime_ms & 0x0000FF);
+                }
+                sendFlag =1;
+                sendSTHCtlPack.sendTimeStamp = globalSynTime_ms;
+            break;
+
+            default:
+                qDebug() << "Error CANPack EType\n";
+            break;
+        }
+
+        // 只有速度给定和位置反馈查询需要帧号，并且由于位置反馈是主从式的，所以帧号只能由PC端发起
+        if (sendFlag == 1) {
             sendSTHCtlPack.EHeader = 0xAA55;
-            sendSTHCtlPack.ENum = g_FrameNum_CH[0]; //暂时用CH1的帧号
-            sendSTHCtlPack.EType = 0x04;
-
-            for (cnt=0;cnt<3; cnt++) {
-                data[0] += 0x40;
-                sendSTHCtlPack.canEnable[cnt] = 1;
-                memcpy(&(sendSTHCtlPack.canCmd[cnt]), data, sizeof(CANFrame_STD));
-                sendSTHCtlPack.canCmd[cnt].CANData[2] = (globalSynTime_ms & 0xFF0000) >> 16;
-                sendSTHCtlPack.canCmd[cnt].CANData[3] = (globalSynTime_ms & 0x00FF00) >> 8;
-                sendSTHCtlPack.canCmd[cnt].CANData[4] = (globalSynTime_ms & 0x0000FF);
-            }
-            sendFlag = 1;
-
+            sendSTHCtlPack.ENum = 0; //暂时为0
+            sendSTHCtlPack.ELen = sizeof(sendSTHCtlPack);
             sendSTHCtlPack.sendTimeStamp = globalSynTime_ms;
-            timeStamp[g_FrameNum_CH[0]] = globalSynTime_ms;
-            g_FrameNum_CH[0]++;
-        break;
 
-        case 5: //传感器位置查询
-            sendSTHCtlPack.EHeader = 0xAA55;
-            sendSTHCtlPack.ENum = 0; //暂时用CH1的帧号
-            sendSTHCtlPack.EType = 0x05;
+            memset(SendBuffer, 0, sizeof(SendBuffer));
+            memcpy(SendBuffer, &sendSTHCtlPack,sizeof(sendSTHCtlPack));
+            sendResult = sendSocket->writeDatagram((char *)SendBuffer, sizeof(sendSTHCtlPack), QHostAddress(dst_IP), dst_Port);
+        } else if (sendFlag == 2) {
+            sendETHPack.EHeader = 0xAA55;
+            sendETHPack.sendTimeStamp = globalSynTime_ms;
 
-            for (cnt = 0;cnt<3; cnt++) {
-                data[0] += 0x40;
-                sendSTHCtlPack.canEnable[cnt] = 1;
-                memcpy(&(sendSTHCtlPack.canCmd[cnt]), data, sizeof(CANFrame_STD));
-                sendSTHCtlPack.canCmd[cnt].CANData[2] = (globalSynTime_ms & 0xFF0000) >> 16;
-                sendSTHCtlPack.canCmd[cnt].CANData[3] = (globalSynTime_ms & 0x00FF00) >> 8;
-                sendSTHCtlPack.canCmd[cnt].CANData[4] = (globalSynTime_ms & 0x0000FF);
-            }
-            sendFlag =1;
-            sendSTHCtlPack.sendTimeStamp = globalSynTime_ms;
-        break;
-
-        case DATAUPLOAD: //传感器位置查询
-
-        break;
-
-        default:
-            qDebug() << "Error CANPack EType\n";
-        break;
-    }
-
-    // 只有速度给定和位置反馈查询需要帧号，并且由于位置反馈是主从式的，所以帧号只能由PC端发起
-    if (sendFlag == 1) {
-        sendSTHCtlPack.EHeader = 0xAA55;
-        sendSTHCtlPack.ENum = 0; //暂时为0
-        sendSTHCtlPack.ELen = sizeof(sendSTHCtlPack);
-        sendSTHCtlPack.sendTimeStamp = globalSynTime_ms;
-
-        memset(SendBuffer, 0, sizeof(SendBuffer));
-        memcpy(SendBuffer, &sendSTHCtlPack,sizeof(sendSTHCtlPack));
-        sendResult = sendSocket->writeDatagram((char *)SendBuffer, sizeof(sendSTHCtlPack), QHostAddress(dst_IP), dst_Port);
-    } else if (sendFlag == 2) {
-        sendETHPack.EHeader = 0xAA55;
-        sendETHPack.sendTimeStamp = globalSynTime_ms;
-
-        memset(SendBuffer, 0, sizeof(SendBuffer));
-        memcpy(SendBuffer, &sendETHPack,sizeof(sendETHPack));
-        sendResult = sendSocket->writeDatagram((char *)SendBuffer, sizeof(sendETHPack), QHostAddress(dst_IP), dst_Port);
-    } else {
-        qDebug() << "Not Send\n";
-        sendResult = 1;
+            memset(SendBuffer, 0, sizeof(SendBuffer));
+            memcpy(SendBuffer, &sendETHPack,sizeof(sendETHPack));
+            sendResult = sendSocket->writeDatagram((char *)SendBuffer, sizeof(sendETHPack), QHostAddress(dst_IP), dst_Port);
+        } else {
+            qDebug() << "Not Send\n";
+            sendResult = 1;
+        }
     }
     return sendResult;
 }
@@ -996,27 +1034,48 @@ void MainWindow::on_speedGiven_clicked()
     CANFrame_STD canpack;
     uint8_t cnt =0;
 
-    //获取最新时间
-    currentTime =QTime::currentTime();
+    if (curAlgoMode == 0){
 
-    //填写报文内容
-    canpack.CANID.STDCANID.MasterOrSlave = 0; //Master下发
-    canpack.CANID.STDCANID.CTRCode = 0x01;
-    canpack.CANID.STDCANID.Reserve = 0;
+        //填写报文内容
+        canpack.CANID.STDCANID.MasterOrSlave = 1; //Master下发
+        canpack.CANID.STDCANID.CTRCode = 0x03;
+        canpack.CANID.STDCANID.Reserve = 0;
 
-    canpack.CANData[0] = (g_speedGivenNum_CH[0] & 0xFF00) >> 8;    //只有速度给定和速度反馈查询需要帧号，并且由于速度反馈是主从式的，所以帧号只能由PC端发起
-    canpack.CANData[1] = g_speedGivenNum_CH[0] & 0x00FF;
+        canpack.CANData[4] = ((ui->lineEdit->text().toInt()) >> 8) & 0xFF;
+        canpack.CANData[5] = ((ui->lineEdit->text().toInt())) & 0xFF;
 
-    memcpy(&(canpack.CANData[2]), &curTimeStamp,sizeof(curTimeStamp));
-    canpack.CANData[5] = (ui->lineEdit->text().toInt() >> 8) & 0xFF;
-    canpack.CANData[6] = (ui->lineEdit->text().toInt()) & 0xFF;
+        if (ui->checkBox->isChecked()) {
+            canpack.CANID.STDCANID.NodeGroupID = 0x01;  // 左电机
+            packetSend(0x01, 0x0, (unsigned char *)(&canpack)); //速度给定
+        }
 
-    canpack.CANID.STDCANID.NodeGroupID = 0x00;
-    packetSend(0x1F, 1, (unsigned char *)(&canpack));
+        if (ui->checkBox_2->isChecked()){
+            canpack.CANID.STDCANID.NodeGroupID = 0x02;  // 右电机
+            packetSend(0x02, 0x0, (unsigned char *)(&canpack));
+        }
+    } else {
+        //获取最新时间
+        currentTime =QTime::currentTime();
 
-    g_speedGivenNum_CH[0]++;
-    if (g_speedGivenNum_CH[0] > maxFrameNum_SpeedGiven) {
-       g_speedGivenNum_CH[0] = initFrameNum_SpeedGiven;
+        //填写报文内容
+        canpack.CANID.STDCANID.MasterOrSlave = 0; //Master下发
+        canpack.CANID.STDCANID.CTRCode = 0x01;
+        canpack.CANID.STDCANID.Reserve = 0;
+
+        canpack.CANData[0] = (g_speedGivenNum_CH[0] & 0xFF00) >> 8;    //只有速度给定和速度反馈查询需要帧号，并且由于速度反馈是主从式的，所以帧号只能由PC端发起
+        canpack.CANData[1] = g_speedGivenNum_CH[0] & 0x00FF;
+
+        memcpy(&(canpack.CANData[2]), &curTimeStamp,sizeof(curTimeStamp));
+        canpack.CANData[5] = (ui->lineEdit->text().toInt() >> 8) & 0xFF;
+        canpack.CANData[6] = (ui->lineEdit->text().toInt()) & 0xFF;
+
+        canpack.CANID.STDCANID.NodeGroupID = 0x00;
+        packetSend(0x1F, 1, (unsigned char *)(&canpack));
+
+        g_speedGivenNum_CH[0]++;
+        if (g_speedGivenNum_CH[0] > maxFrameNum_SpeedGiven) {
+           g_speedGivenNum_CH[0] = initFrameNum_SpeedGiven;
+        }
     }
 }
 
@@ -1112,7 +1171,7 @@ unsigned short SMCpreController(short *x)
 }
 
 
-//0x1F 发送大量数据读取请求
+//0x1F 发送大量数据读取请求 这个不需要回复 仅告知CAS停止获取新数据 需要CAS处于静止时生效
 void MainWindow::on_pushButton_6_clicked()
 {
     unsigned char data1[8] = {0};
@@ -1283,3 +1342,15 @@ uint8_t crossCouplingSync_Update()
 
    return duss_result;
 }
+
+
+// 工作模式选择
+void MainWindow::on_StorePMSM2_2_clicked()
+{
+
+
+
+
+
+}
+

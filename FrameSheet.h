@@ -9,16 +9,11 @@
 #define int16_t short
 #define uint32_t unsigned int
 
-#define BufMaxStorageCnt 6000
+#define BufMaxStorageCnt        (6000)
 #define SingleShotMaxStorageCnt (BufMaxStorageCnt/2)
 
-#define MAXDELAYLEN 5
-
-
-// 下发报文指令
-
-#define DATAUPLOAD          (0x1F)
-
+#define MAXDELAYLEN             (5)
+#define MAXCASNODENUM           (2)
 
 #pragma pack(1)
 
@@ -59,8 +54,16 @@ typedef struct timeStamp {
  * EType =6: 上传位置同步误差信息 帧号+ 当前UTC同步时间+实时平均误差信息
  * Etype =7: PC向ETH获取时延模拟数据
  * Etype =8: PC向CAS获取事件触发数据
+ * EType =0x1F: PC向CAS获取存储位移数据
  *
 */
+
+// ETH下发报文指令类型
+#define SPEEDCMD            (0x00)
+#define PRESPEED            (0x01)
+#define TIMESYNC            (0x02)
+#define POSIACQUIRE         (0x03)
+#define DATAUPLOAD          (0x1F)
 
 typedef struct
 {
@@ -69,11 +72,21 @@ typedef struct
     uint32_t ELen;           //Ethernet长度 Byte
     uint8_t EType;           //报文类型
     uint32_t sendTimeStamp;  //发送时间戳
-    uint8_t canEnable[3];      //下发 or 上传数据包含can1节点数据
-    CANFrame_STD canCmd[3];      //CAN节点1 报文
+    uint8_t canEnable[MAXCASNODENUM];      //下发 or 上传数据包含can1节点数据
+    CANFrame_STD canCmd[MAXCASNODENUM];      //CAN节点1 报文
     uint32_t EChecksum;
     uint32_t FrameTailer;
 }EthControlFrame;
+
+typedef struct
+{
+    uint32_t EHeader;        //Ethernet帧头
+    uint32_t ENum;           //Ethernet帧号
+    uint32_t ELen;           //Ethernet长度 Byte
+    uint8_t EType;           //报文类型
+    CANFrame_STD canpack;
+    uint32_t FrameTailer;
+}EthControlFrameSingleCAS;
 
 typedef struct
 {
@@ -82,10 +95,10 @@ typedef struct
     uint32_t ELen;           //Ethernet长度 Byte
     uint8_t EType;           //报文类型
     uint8_t ETotalPackNum;   //总CAN包数
-    uint8_t can_preLen[3];     //CAN预测长度
+    uint8_t can_preLen[MAXCASNODENUM];     //CAN预测长度
     uint32_t sendTimeStamp;  //发送时间戳
-    uint8_t canEnable[3];      //下发 or 上传数据包含can节点数据
-    CANFrame_STD canPreCmd[3][MAXDELAYLEN];  //CAN1预测命令
+    uint8_t canEnable[MAXCASNODENUM];      //下发 or 上传数据包含can节点数据
+    CANFrame_STD canPreCmd[MAXCASNODENUM][MAXDELAYLEN];  //CAN1预测命令
     uint32_t EChecksum;
     uint32_t FrameTailer;
 }EthPredFrame;
@@ -94,8 +107,8 @@ typedef struct
 typedef struct {
     uint32_t EHeader;         //Ethernet帧头
     uint32_t ENum;            //Ethernet帧号
-    uint32_t ELen;           //Ethernet长度 Byte
-    uint8_t EType;           //报文类型
+    uint32_t ELen;            //Ethernet长度 Byte
+    uint8_t EType;            //报文类型
     uint32_t timeSync;
     uint16_t EChecksum;
     uint16_t FrameTailer;
@@ -112,12 +125,23 @@ ETH: 0x01 位置查询
      0x02 速度给定
      0x1E 时间同步
      0x1F 存储数据读取
+(存疑)
 
 CAS: 0x01 位置查询
-     0x02 速度给定
-     0x1E 时间同步
-     0x1F 存储数据读取
+     0x01 速度给定
+     0x04 时间同步
+     0x0A 存储数据读取
  */
+
+#define CANSpeedCmd                     (1)
+#define CANSpeedPreCmd                  (2)
+#define CANOperationModeCmd             (3)
+#define CANTimeSyncCmd                  (4)
+#define CANPisiAcquireCmd               (5)
+#define CANTimeSyncErrorCalCmd          (6)
+#define CANLocalPITestCmd               (7)
+#define CANDriverInfoAcquire            (10)
+
 
 //串口通信帧格式（其实没啥用，仅作为编程参考）
 typedef struct serialData
@@ -156,5 +180,7 @@ typedef struct
 #pragma pack()
 
 uint16_t WordCombine(uint8_t byte1, uint8_t byte2);
+
+extern volatile unsigned char curAlgoMode;
 
 #endif // FRAMESHEET_H
