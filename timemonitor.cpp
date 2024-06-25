@@ -30,8 +30,7 @@ void timeMonitor::timerStatusOperation(unsigned char OperationCmd)
 void timeMonitor::handleEvent()
 {
     curTime++;
-    if(curTime >= 3600000) //计时1小时清零
-    {
+    if(curTime >= 3600000) {
         curTime = 0;
     }
     emit cur_TimestampPrint(curTime);

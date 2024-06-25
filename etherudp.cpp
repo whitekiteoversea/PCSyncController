@@ -8,12 +8,17 @@
 #include <QFileDialog>
 #include <QVariant>
 
+#define RECVLEN  (600)  // 接收区长度
+#define SENDLEN  (600)  // 接收区长度
+
+// ETH-CAS Mode
 QString bindIP = "192.168.20.33"; //上位机接收IP
-unsigned short bindPort = 8888;  //上位机接收端口
-unsigned char etherRecvBuf[1474] = {0}; //以太网接收缓冲区
+uint16_t bindPort = 8888;  //上位机接收端口
+
+uint8_t etherRecvBuf[RECVLEN] = {0}; //以太网接收缓冲区
 uint8_t curSndCANMsgCnt = 0; //记录本次发送的CAN消息条数
-uint8_t etherudpSndBuf[1474] = {0};  //以太网报文发送缓冲区
-unsigned int recvTimeSyn[2] = {0};
+uint8_t etherudpSndBuf[SENDLEN] = {0};  //以太网报文发送缓冲区
+uint32_t recvTimeSyn[2] = {0};
 
 //动态分配接收大量数据
 QList<unsigned int> timeStamplist_1;
@@ -55,6 +60,8 @@ void Etherudp::read_data()
     int32_t tmpSyncErr = 0;
     feedbackData sampleData;
     EthControlFrame recvFeedbackPack;
+
+    CASREPORTFRAME recvCASFrame;
     uint8_t cnt =0;
 
     /*接收以太网数据包,注意处理多字节数据大小端问题*/
@@ -68,15 +75,36 @@ void Etherudp::read_data()
         ba.resize(mSocket->pendingDatagramSize());
         mSocket->readDatagram(ba.data(),ba.size());
 
-        //3、准备接收区
-        memset(&etherRecvBuf, 0, sizeof(etherRecvBuf));
-        memcpy(&etherRecvBuf,ba.data(),ba.size());
-        memset(&recvFeedbackPack, 0, sizeof(recvFeedbackPack));
-        memcpy(&recvFeedbackPack, etherRecvBuf, sizeof(recvFeedbackPack));
-        //根据报文类型解包(接收的报文结构体不一致)
-        for (cnt = 0; cnt<3; cnt++) {
-            if (recvFeedbackPack.canEnable[cnt] == 1) {
-                switch(recvFeedbackPack.canCmd[cnt].CANID.STDCANID.CTRCode) {
+        // CAS Mode
+        if (curAlgoMode == 0) {
+            memset(&etherRecvBuf, 0, sizeof(etherRecvBuf));
+            memcpy(&etherRecvBuf,ba.data(),ba.size());
+            memset(&recvCASFrame, 0, sizeof(recvCASFrame));
+            memcpy(&recvCASFrame, etherRecvBuf, sizeof(recvCASFrame));
+
+            switch (recvCASFrame.EType) {
+                case CANPosiAcquireCmd:  //状态反馈
+
+                    // 大小端处理
+
+
+                    emit updateStatus(recvCASFrame.CASNodeID, recvCASFrame);
+                    qDebug() << "FeedbackPosi: " + QString::number(recvCASFrame.motorPosiUM ,10) + "um \n";
+                    break;
+
+                default:
+                    break;
+            }
+        } else if (curAlgoMode == 1) {
+            //3、准备接收区
+            memset(&etherRecvBuf, 0, sizeof(etherRecvBuf));
+            memcpy(&etherRecvBuf,ba.data(),ba.size());
+            memset(&recvFeedbackPack, 0, sizeof(recvFeedbackPack));
+            memcpy(&recvFeedbackPack, etherRecvBuf, sizeof(recvFeedbackPack));
+            //根据报文类型解包(接收的报文结构体不一致)
+            for (cnt = 0; cnt<3; cnt++) {
+                if (recvFeedbackPack.canEnable[cnt] == 1) {
+                    switch(recvFeedbackPack.canCmd[cnt].CANID.STDCANID.CTRCode) {
                     case 4:
                         sampleData.frameNum = recvFeedbackPack.canCmd[cnt].CANData[0];
                         sampleData.frameNum <<= 8;
@@ -89,7 +117,7 @@ void Etherudp::read_data()
                         sampleData.sampleTimeStamp |= recvFeedbackPack.canCmd[cnt].CANData[4];
 
                         emit updateRTTDelay(cnt+1, sampleData);
-                    break;
+                        break;
 
                     case 5:
                         sampleData.frameNum = recvFeedbackPack.canCmd[cnt].CANData[0];
@@ -101,9 +129,9 @@ void Etherudp::read_data()
                         tempPosi |= recvFeedbackPack.canCmd[cnt].CANData[6];
                         tempPosi <<= 8;
                         tempPosi |= recvFeedbackPack.canCmd[cnt].CANData[7];
-                        sampleData.pulseCnt = (int)tempPosi;
+                        sampleData.feedbackPosium = (int)tempPosi;
                         emit updateSystemModel(cnt+1, sampleData); // 更新离散模型
-                    break;
+                        break;
 
                     case 6:
                         sampleData.frameNum = recvFeedbackPack.canCmd[0].CANData[0];
@@ -115,13 +143,14 @@ void Etherudp::read_data()
                         tmpSyncErr |= recvFeedbackPack.canCmd[0].CANData[6];
                         tmpSyncErr <<= 8;
                         tmpSyncErr |= recvFeedbackPack.canCmd[0].CANData[7];
-                        emit updateAvgPosi(tmpSyncErr); // 更新实时同步误差
-                    break;
+                        // emit updateRealTimePosi(tmpSyncErr); // 更新实时同步误差
+                        break;
 
-                     default:
-                    break;
+                    default:
+                        break;
+                    }
                 }
-             }
+            }
         }
     }
 }

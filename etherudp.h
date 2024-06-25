@@ -25,7 +25,7 @@ signals:
     void storageOk(unsigned short recvLen); //告知传输结束
 
     void updateSystemModel(unsigned char sendNo, feedbackData sampleData); //接收到最新的x_estimate，通知更新预测控制序列u_arr
-    void updateAvgPosi(short avgPosi);
+    void updateStatus(unsigned char sendNo, CASREPORTFRAME statusData);
     void updateRTTDelay(unsigned char sendNo, feedbackData sampleData); //更新同步RTT时延
 
 public slots:

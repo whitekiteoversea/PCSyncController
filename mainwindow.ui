@@ -128,7 +128,7 @@
              </size>
             </property>
             <property name="text">
-             <string>400</string>
+             <string>50</string>
             </property>
            </widget>
           </item>
@@ -141,6 +141,9 @@
           </item>
           <item row="0" column="4">
            <widget class="QPushButton" name="synStart">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
             <property name="text">
              <string>同步启动</string>
             </property>
@@ -505,7 +508,7 @@
      <rect>
       <x>800</x>
       <y>20</y>
-      <width>261</width>
+      <width>301</width>
       <height>191</height>
      </rect>
     </property>
@@ -577,9 +580,9 @@
    <widget class="QGroupBox" name="groupBox_8">
     <property name="geometry">
      <rect>
-      <x>810</x>
+      <x>800</x>
       <y>230</y>
-      <width>251</width>
+      <width>301</width>
       <height>261</height>
      </rect>
     </property>
@@ -607,7 +610,7 @@
     <widget class="QWidget" name="layoutWidget">
      <property name="geometry">
       <rect>
-       <x>10</x>
+       <x>30</x>
        <y>30</y>
        <width>225</width>
        <height>211</height>
@@ -622,7 +625,7 @@
        </widget>
       </item>
       <item row="3" column="1">
-       <widget class="QLabel" name="label_13">
+       <widget class="QLabel" name="PMSM2Posi">
         <property name="text">
          <string>0</string>
         </property>
@@ -648,7 +651,7 @@
       <item row="2" column="0">
        <widget class="QLabel" name="label_26">
         <property name="text">
-         <string>PMSM1位移(um)</string>
+         <string>PMSM1位置(um)</string>
         </property>
        </widget>
       </item>
@@ -665,7 +668,7 @@
       <item row="3" column="0">
        <widget class="QLabel" name="label_27">
         <property name="text">
-         <string>PMSM2位移(um)</string>
+         <string>PMSM2位置(um)</string>
         </property>
        </widget>
       </item>
@@ -677,7 +680,7 @@
        </widget>
       </item>
       <item row="2" column="1">
-       <widget class="QLabel" name="label_12">
+       <widget class="QLabel" name="PMSM1Posi">
         <property name="text">
          <string>0</string>
         </property>
@@ -706,10 +709,10 @@
    <widget class="QGroupBox" name="groupBox_9">
     <property name="geometry">
      <rect>
-      <x>810</x>
+      <x>800</x>
       <y>510</y>
-      <width>251</width>
-      <height>281</height>
+      <width>151</width>
+      <height>284</height>
      </rect>
     </property>
     <property name="sizePolicy">
@@ -733,110 +736,193 @@
     <property name="title">
      <string>系统运行模式控制</string>
     </property>
-    <widget class="QWidget" name="">
+    <layout class="QVBoxLayout" name="verticalLayout_2">
+     <item>
+      <widget class="QCheckBox" name="ETHMode">
+       <property name="text">
+        <string>ETH-CAS模式</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="label_31">
+       <property name="text">
+        <string>电机1运行模式</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QComboBox" name="comboBox_3">
+       <property name="editable">
+        <bool>false</bool>
+       </property>
+       <item>
+        <property name="text">
+         <string>3</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>4</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>1</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>0</string>
+        </property>
+       </item>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="StorePMSM2_2">
+       <property name="text">
+        <string>电机1设置</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="checkBox">
+       <property name="text">
+        <string>电机1使能</string>
+       </property>
+       <property name="tristate">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="label_32">
+       <property name="text">
+        <string>电机2运行模式</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QComboBox" name="comboBox_4">
+       <item>
+        <property name="text">
+         <string>3</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>4</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>1</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>0</string>
+        </property>
+       </item>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="StorePMSM2_3">
+       <property name="text">
+        <string>电机2设置</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="checkBox_2">
+       <property name="text">
+        <string>电机2使能</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+   <widget class="QGroupBox" name="groupBox_10">
+    <property name="geometry">
+     <rect>
+      <x>960</x>
+      <y>510</y>
+      <width>141</width>
+      <height>284</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>120</width>
+      <height>261</height>
+     </size>
+    </property>
+    <property name="baseSize">
+     <size>
+      <width>120</width>
+      <height>261</height>
+     </size>
+    </property>
+    <property name="title">
+     <string>系统运行状态</string>
+    </property>
+    <widget class="QLabel" name="label_33">
      <property name="geometry">
       <rect>
        <x>20</x>
-       <y>40</y>
-       <width>211</width>
-       <height>141</height>
+       <y>30</y>
+       <width>80</width>
+       <height>16</height>
       </rect>
      </property>
-     <layout class="QFormLayout" name="formLayout">
-      <item row="0" column="0">
-       <widget class="QLabel" name="label_31">
-        <property name="text">
-         <string>电机1运行模式</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="1">
-       <widget class="QComboBox" name="comboBox_3">
-        <property name="editable">
-         <bool>false</bool>
-        </property>
-        <item>
-         <property name="text">
-          <string>3</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>4</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>1</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>0</string>
-         </property>
-        </item>
-       </widget>
-      </item>
-      <item row="1" column="0">
-       <widget class="QCheckBox" name="checkBox">
-        <property name="text">
-         <string>电机1使能</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="1">
-       <widget class="QPushButton" name="StorePMSM2_2">
-        <property name="text">
-         <string>电机1设置</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="0">
-       <widget class="QLabel" name="label_32">
-        <property name="text">
-         <string>电机2运行模式</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="1">
-       <widget class="QComboBox" name="comboBox_4">
-        <item>
-         <property name="text">
-          <string>3</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>4</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>1</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>0</string>
-         </property>
-        </item>
-       </widget>
-      </item>
-      <item row="3" column="0">
-       <widget class="QCheckBox" name="checkBox_2">
-        <property name="text">
-         <string>电机2使能</string>
-        </property>
-       </widget>
-      </item>
-      <item row="3" column="1">
-       <widget class="QPushButton" name="StorePMSM2_3">
-        <property name="text">
-         <string>电机2设置</string>
-        </property>
-       </widget>
-      </item>
-     </layout>
+     <property name="text">
+      <string>电机1运行状态</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_34">
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>154</y>
+       <width>80</width>
+       <height>16</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>电机2运行状态</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="PMSM1STA">
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>60</y>
+       <width>80</width>
+       <height>16</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+    <widget class="QLabel" name="PMSM2STA">
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>190</y>
+       <width>80</width>
+       <height>16</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
     </widget>
    </widget>
   </widget>

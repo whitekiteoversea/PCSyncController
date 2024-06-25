@@ -16,8 +16,11 @@
 #include "pid.h"
 #include "cccControl.h"
 
+
+// 对于ETH发送的处理其实比较粗陋，应该初始化一个队列对象，队列对象提供一个发送接口，每次发送都是向队列对象
+// 发送一次信号，这样可以有效避免发送撞车，但时间来不及了，后面测出问题再考虑增加吧
+
 // 功能开关
-#define SerialPortEnable (0)    //串口默认关闭
 #define TimeSyncEnable   (1)    //报文时钟同步默认开启
 #define SpeedSyncMode    (0)    //测试用，三通道速度给定一致
 
@@ -35,11 +38,10 @@
 #define maxFrameNum_SpeedPre 59999
 
 // 编码器参数常数
-#define PULSENUM 2060
+// #define PULSENUM 2060
 
 //可用串口列表
 QStringList *availbleSerialPort;
-
 
 // 单机通信测试 0  or ETH-CAS 通信 1
 volatile unsigned char curAlgoMode = 0;
@@ -47,6 +49,7 @@ volatile unsigned char curAlgoMode = 0;
 //工作模式
 unsigned char workMode= 0;  // 0:默认模式;1:位置曲线控制;2:同步控制
 short *refPosiArray = NULL; //获取
+
 int posiRef = 0;            //位置PID控制给定
 
 uint32_t timeStamp[maxStorageLen];      //存放对应帧的utc时间
@@ -60,7 +63,9 @@ PIDController pid;
 
 //通道数据接收
 uint16_t recPosiCnt_CH[3] = {0};
-feedbackData laFData_CH[3];
+
+feedbackData laFData_CH[3];  // 绘图使用电机反馈数据
+
 uint32_t g_RecvTimeMS_CH1[maxStorageLen];   //存储反馈位置数据时间
 uint32_t g_RecvTimeMS_CH2[maxStorageLen];   //存储反馈位置数据时间
 uint32_t g_RecvTimeMS_CH3[maxStorageLen];   //存储反馈位置数据时间
@@ -96,7 +101,7 @@ volatile unsigned int refreshCnt = 0;
 
 // 对端IP、Port
 QString dst_CASIP[2] = {"192.168.20.11","192.168.20.12"};
-int dst_CASPort[2] = {8001,8002};
+int dst_CASPort[2] = {8001, 8002};
 
 QString dst_IP = "192.168.1.30";
 int dst_Port = 8001;
@@ -160,14 +165,14 @@ MainWindow::MainWindow(QWidget *parent)
     //预测模型更新 事件触发判断
     connect(localEthRecvTask, SIGNAL(updateSystemModel(unsigned char, feedbackData)),
             this, SLOT(upreupdateJudge(unsigned char, feedbackData)), Qt::AutoConnection);
-
+    //传输时延计算
     connect(localEthRecvTask, SIGNAL(updateRTTDelay(unsigned char, feedbackData)),
             this, SLOT(rttDelayUpdate(unsigned char, feedbackData)), Qt::AutoConnection);
+    //电机状态数据
+    connect(localEthRecvTask, SIGNAL(updateStatus(unsigned char, CASREPORTFRAME)),
+            this, SLOT(updateRealTimeStatus(unsigned char, CASREPORTFRAME)),Qt::AutoConnection);
 
-    connect(localEthRecvTask, SIGNAL(updateAvgPosi(short avgPosi)),
-            this, SLOT(updateAvgPosi(short avgPosi)),Qt::AutoConnection);
-
-#if SerialPortEnable
+#ifdef SERIAL_DEBUG_ENABLE
     //新建串口接收对象
     speedCurTask_1 = new WirelessSerialPort(this);
     speedCurTask_2 = new WirelessSerialPort(this);
@@ -256,22 +261,39 @@ void MainWindow::sendTimeSyncSig()
     //获取最新时间
     currentTime =QTime::currentTime();
 
-    //填写报文内容
-    canpack.CANID.STDCANID.MasterOrSlave = 0; //Master下发
-    canpack.CANID.STDCANID.CTRCode = 0x04;      //时间同步报文分发
-    canpack.CANID.STDCANID.NodeGroupID = 0x01;  //广播
+    if (curAlgoMode == 0) {
+        //填写报文内容
+        canpack.CANID.STDCANID.MasterOrSlave = 1;               // Master下发
+        canpack.CANID.STDCANID.CTRCode = CANTimeSyncCmd;
+        canpack.CANID.STDCANID.Reserve = 0;
 
-    canpack.CANData[0] = (g_FrameNum_CH[0] & 0xFF00) >> 8;
-    canpack.CANData[1] = g_FrameNum_CH[0] & 0x00FF;
+        if (ui->checkBox->isChecked()) {
+            canpack.CANID.STDCANID.NodeGroupID = 0x01;  // 左电机
+            packetSend(0x01, CANTimeSyncCmd, (unsigned char *)(&canpack)); //速度给定
+        }
 
-    canpack.CANData[2] = (globalSynTime_ms >> 16) & 0xFF;
-    canpack.CANData[3] = (globalSynTime_ms >> 8) & 0xFF;
-    canpack.CANData[4] = globalSynTime_ms & 0xFF;
+        if (ui->checkBox_2->isChecked()){
+            canpack.CANID.STDCANID.NodeGroupID = 0x02;  // 右电机
+            packetSend(0x02, CANTimeSyncCmd, (unsigned char *)(&canpack));
+        }
+    } else if (curAlgoMode == 1) {
+        //填写报文内容
+        canpack.CANID.STDCANID.MasterOrSlave = 1;       // Master下发
+        canpack.CANID.STDCANID.CTRCode = CANTimeSyncCmd;      // 时间同步报文分发
+        canpack.CANID.STDCANID.NodeGroupID = 0x01;      // 广播
 
-    packetSend(0x1F, 4, (unsigned char *)(&canpack));
+        canpack.CANData[0] = (g_FrameNum_CH[0] & 0xFF00) >> 8;
+        canpack.CANData[1] = g_FrameNum_CH[0] & 0x00FF;
+
+        canpack.CANData[2] = (globalSynTime_ms >> 16) & 0xFF;
+        canpack.CANData[3] = (globalSynTime_ms >> 8) & 0xFF;
+        canpack.CANData[4] = globalSynTime_ms & 0xFF;
+
+        packetSend(0x1F, 4, (unsigned char *)(&canpack));
+    }
 }
 
-// 周期获取位置传感器反馈值 > 25ms
+// 周期获取位置传感器反馈值 > 20ms
 void MainWindow::sendRequestSig()
 {
     CANFrame_STD canpack;
@@ -279,23 +301,40 @@ void MainWindow::sendRequestSig()
     //获取最新时间
     currentTime =QTime::currentTime();
 
-    //填写报文内容
-    canpack.CANID.STDCANID.MasterOrSlave = 0;       //Master下发
-    canpack.CANID.STDCANID.CTRCode = 0x05;          //时间同步报文分发
-    canpack.CANID.STDCANID.NodeGroupID = 0x01;      //广播
+    if (curAlgoMode == 0) {
+        //填写报文内容
+        canpack.CANID.STDCANID.MasterOrSlave = 1;               // Master下发
+        canpack.CANID.STDCANID.CTRCode = CANPosiAcquireCmd;
+        canpack.CANID.STDCANID.Reserve = 0;
 
-    canpack.CANData[0] = (g_PosiFeedNum_CH & 0xFF00) >> 8;
-    canpack.CANData[1] = g_PosiFeedNum_CH & 0x00FF;
+        if (ui->checkBox->isChecked()) {
+            canpack.CANID.STDCANID.NodeGroupID = 0x01;  // 左电机
+            packetSend(0x01, CANPosiAcquireCmd, (unsigned char *)(&canpack)); //速度给定
+        }
 
-    canpack.CANData[2] = (globalSynTime_ms >> 16) & 0xFF;
-    canpack.CANData[3] = (globalSynTime_ms >> 8) & 0xFF;
-    canpack.CANData[4] = globalSynTime_ms & 0xFF;
+        if (ui->checkBox_2->isChecked()){
+            canpack.CANID.STDCANID.NodeGroupID = 0x02;  // 右电机
+            packetSend(0x02, CANPosiAcquireCmd, (unsigned char *)(&canpack));
+        }
+    } else if (curAlgoMode == 1) {
+        //填写报文内容
+        canpack.CANID.STDCANID.MasterOrSlave = 1;       //Master下发
+        canpack.CANID.STDCANID.CTRCode = CANPosiAcquireCmd;          //
+        canpack.CANID.STDCANID.NodeGroupID = 0x01;      //广播
 
-    packetSend(0x1F, 5, (unsigned char *)(&canpack));
+        canpack.CANData[0] = (g_PosiFeedNum_CH & 0xFF00) >> 8;
+        canpack.CANData[1] = g_PosiFeedNum_CH & 0x00FF;
 
-    g_PosiFeedNum_CH++;
-    if (g_PosiFeedNum_CH > maxFrameNum_PosiFeed) {
-       g_PosiFeedNum_CH = initFrameNum_PosiFeed;
+        canpack.CANData[2] = (globalSynTime_ms >> 16) & 0xFF;
+        canpack.CANData[3] = (globalSynTime_ms >> 8) & 0xFF;
+        canpack.CANData[4] = globalSynTime_ms & 0xFF;
+
+        packetSend(0x1F, 5, (unsigned char *)(&canpack));
+
+        g_PosiFeedNum_CH++;
+        if (g_PosiFeedNum_CH > maxFrameNum_PosiFeed) {
+            g_PosiFeedNum_CH = initFrameNum_PosiFeed;
+        }
     }
 }
 
@@ -310,9 +349,6 @@ void MainWindow::sendGivenSpeedSig(unsigned char sendNo, short givenSpeed)      
     canpack.CANID.STDCANID.CTRCode = 0x01;      //速度给定报文分发
     canpack.CANID.STDCANID.NodeGroupID = sendNo;  //CAN ID=1
 
-//    canpack.CANData[0] = (g_speedGivenNum_CH[sendNo-1] & 0xFF00) >> 8;    //只有速度给定和速度反馈查询需要帧号，并且由于速度反馈是主从式的，所以帧号只能由PC端发起
-//    canpack.CANData[1] = g_speedGivenNum_CH[sendNo-1] & 0x00FF;
-
     //指向 data[2]
     memcpy(&(canpack.CANData[2]), &curTimeStamp, 3);
 
@@ -321,11 +357,6 @@ void MainWindow::sendGivenSpeedSig(unsigned char sendNo, short givenSpeed)      
     canpack.CANData[6] = givenSpeed & 0xFF;
 
     packetSend(sendNo, 1, (unsigned char *)(&canpack));
-
-//    g_speedGivenNum_CH[sendNo-1]++;
-//    if (g_speedGivenNum_CH[sendNo-1] > maxFrameNum_SpeedGiven) {
-//       g_speedGivenNum_CH[sendNo-1] = initFrameNum_SpeedGiven;
-//    }
 }
 
 //预测速度给定(未启用)
@@ -358,7 +389,7 @@ void MainWindow::sendGivenPreSpeedSig(unsigned char sendNo, feedbackData sampleD
 //    g_FrameNum_CH[0]++;
 }
 
-//超时处理
+//定时器时基分配函数
 void MainWindow::onTimeout(unsigned int RecvCurTimeStamp_Ms)
 {
     static unsigned int requestPacketCnt = 0;
@@ -370,36 +401,30 @@ void MainWindow::onTimeout(unsigned int RecvCurTimeStamp_Ms)
 
     //刷新系统计时 500ms
     refreshCnt++;
-    if(refreshCnt >= 500)
-    {
+    if(refreshCnt >= 500) {
         ui->label_4->setText(QString::number(globalSynTime_ms, 10));
+
+        // 检查通信模式
+        if (ui->ETHMode->isChecked()) {
+            curAlgoMode = 1; // ETH-CAS 预测控制模式
+        }
         refreshCnt=0;
     }
 
     // 时间同步报文下发 1s
-    if(timeSyncPacketCnt >= 1000) {
+    if (timeSyncPacketCnt >= 1000) {
         timeSyncPacketCnt = 0;
         sendTimeSyncSig();
     }
 
-    // 周期查询报文下发时间 40ms
-    if (requestPacketCnt >= 40) {
+    // 周期查询报文下发时间 20ms
+    if (requestPacketCnt >= 20) {
         requestPacketCnt = 0;
         sendRequestSig();
     }
 
     timeSyncPacketCnt++;
     requestPacketCnt++;
-
-//    // 位置模式
-//    if (workMode == 1) {
-//        if (pidCnt >= 40) {
-//            givenSpeed = PIDController_Update(&pid, (float)posiRef, (float)(laFData_CH[0].pulseCnt));
-//            sendGivenSpeedSig(1, (short)givenSpeed);
-//            pidCnt =0;
-//        }
-//        pidCnt++;
-//    }
 }
 
 //计时开始/终止信号
@@ -408,13 +433,13 @@ void MainWindow::on_timerSet_clicked()
     volatile unsigned char timerStatus_Now = 0;
     if(ui->timerSet->text() == "计时开始")
     {
-        timerStatus_Now =1;
+        timerStatus_Now = 1;
         ui->timerSet->setText("计时停止");
         emit timerCTRSend(timerStatus_Now);
     }
     else if(ui->timerSet->text() == "计时停止")
     {
-        timerStatus_Now =0;
+        timerStatus_Now = 0;
         ui->timerSet->setText("计时开始");
         emit timerCTRSend(timerStatus_Now);
     }
@@ -451,20 +476,18 @@ void MainWindow::plotParaSetup()
     ui->speedRecord->graph(0)->setPen(QPen(QColor(40, 110, 255)));
     ui->speedRecord->addGraph(); // red line
     ui->speedRecord->graph(1)->setPen(QPen(QColor(255, 110, 40)));
+
+#ifdef XAXIS_ENABLE
     ui->speedRecord->addGraph(); // black line
     ui->speedRecord->graph(2)->setPen(QPen(QColor(0, 0, 0)));
-//    //2、以太网
-//    ui->speedRecord->addGraph(); // Green line
-//    ui->speedRecord->graph(2)->setPen(QPen(QColor(34, 139, 34)));
-//    ui->speedRecord->addGraph(); // red line
-//    ui->speedRecord->graph(3)->setPen(QPen(QColor(0, 0, 0)));
+#endif
 
     //定义坐标轴范围
     QSharedPointer<QCPAxisTickerTime> timeTicker(new QCPAxisTickerTime);
     timeTicker->setTimeFormat("%m:%s:%z");                    //时间格式
     ui->speedRecord->xAxis->setTicker(timeTicker);            //x轴跟随本地时间
     ui->speedRecord->axisRect()->setupFullAxesBox();
-    ui->speedRecord->yAxis->setRange(-100, 2000);            //y轴给定上下限
+    // ui->speedRecord->yAxis->setRange(-100, 2000);            //y轴给定上下限
 
     //定义坐标轴名称
     ui->speedRecord->plotLayout()->insertRow(0);
@@ -483,12 +506,18 @@ void MainWindow::plotParaSetup()
     //增加图例
     ui->speedRecord->legend->setVisible(true);
     ui->speedRecord->legend->setFont(QFont("Helvetica",9)); //图例 字体
-    lineNames << "PMSM1"<< "PMSM2" << "PMSM3" ;
+    lineNames << "PMSM1"<< "PMSM2";
+
+#ifdef XAXIS_ENABLE
+    lineNames << "PMSM3" ;
+#endif
 
     ui->speedRecord->graph(0)->setName(lineNames[0]);
     ui->speedRecord->graph(1)->setName(lineNames[1]);
+
+#ifdef XAXIS_ENABLE
     ui->speedRecord->graph(2)->setName(lineNames[2]);
-   // ui->speedRecord->graph(0)->setLineStyle((QCPGraph::LineStyle)0);
+#endif
 
     //make left and bottom axes transfer their ranges to right and top axes:
     connect(ui->speedRecord->xAxis, SIGNAL(rangeChanged(QCPRange)), ui->speedRecord->xAxis2, SLOT(setRange(QCPRange)));
@@ -503,6 +532,8 @@ void MainWindow::realtimeDataSlot()
 {
     QString dispText;
     static double lastPointKey = 0;
+    static double lastFpsKey;
+    static int frameCount;
 
     //获取当前时间
     static QTime time(QTime::currentTime());
@@ -510,28 +541,17 @@ void MainWindow::realtimeDataSlot()
     double key = time.elapsed()/1000.0; // time elapsed since start of demo, in seconds
 
     //最大帧数 50帧
-    if (key-lastPointKey > 0.02) // at most add point every 20 ms
-    {
-        //反馈位置曲线
-        ui->speedRecord->graph(0)->addData(key, (int)(laFData_CH[0].pulseCnt/PULSENUM));
-
-        // rescale value (vertical) axis to fit the current data:
-        ui->speedRecord->graph(0)->rescaleValueAxis(true);
+    if (key-lastPointKey > 0.02) {
+        ui->speedRecord->graph(0)->addData(key, laFData_CH[0].feedbackPosium);
+        ui->speedRecord->graph(0)->rescaleValueAxis(true); // rescale value (vertical) axis to fit the current data:
         lastPointKey = key;
-    }
-    // make key axis range scroll with the data (at a constant range size of 8): 坐标轴根据数据长度以8的倍数缩放
-    ui->speedRecord->xAxis->setRange(key, 8, Qt::AlignRight);
-    //重绘曲线画面
-    ui->speedRecord->replot();
+    } 
+    ui->speedRecord->xAxis->setRange(key, 8, Qt::AlignRight); // 坐标轴根据数据长度以8的倍数缩放
+    ui->speedRecord->replot();//重绘曲线画面
 
-    // calculate frames per second: 逐秒计算帧数
-    static double lastFpsKey;
-    static int frameCount;
     ++frameCount;
-
-    //计算平均帧率
-    if (key-lastFpsKey > 2) // average fps over 2 seconds
-    {
+    //窗口长度2s 计算平均帧率
+    if (key-lastFpsKey > 2) {
         dispText =  QString("%1 FPS, Total Data points: %2").arg(frameCount/(key-lastFpsKey), 0, 'f', 0).arg(ui->speedRecord->graph(0)->data()->size());
         statusLabel->setText(dispText);
         lastFpsKey = key;
@@ -539,33 +559,56 @@ void MainWindow::realtimeDataSlot()
     }
 }
 
-//同步停车(接口保留，指令废弃)
+// 快速停车
 void MainWindow::on_synStop_clicked()
 {
     volatile unsigned int cursendTime = 0;
+    CANFrame_STD canpack;
+
     unsigned char data1[8] = {0};
     unsigned char data2[8] = {0};
 
     cursendTime = globalSynTime_ms;
-    for(int i =0;i<4;i++)
-    {
-        data1[i] = (cursendTime >> ((3-i)*8)) | 0x000000FF;
-    }
-    packetSend(0x01, 0x04, data1);
 
-    cursendTime = globalSynTime_ms;
-    for(int i=0;i<4;i++)
-    {
-        data2[i] = (cursendTime >> ((3-i)*8)) | 0x000000FF;
+    if (curAlgoMode == 0) {
+
+        canpack.CANID.STDCANID.MasterOrSlave = 1;
+        canpack.CANID.STDCANID.CTRCode = CANSpeedCmd;
+        canpack.CANID.STDCANID.Reserve = 0;
+
+        canpack.CANData[4] = 0;
+        canpack.CANData[5]= 0;
+        if (ui->checkBox->isChecked()) {
+            canpack.CANID.STDCANID.NodeGroupID = 0x01;  // 左电机
+            packetSend(0x01, CANSpeedCmd, (unsigned char *)(&canpack));
+        }
+        if (ui->checkBox_2->isChecked()) {
+            canpack.CANID.STDCANID.NodeGroupID = 0x02;  // 右电机
+            packetSend(0x02, CANSpeedCmd, (unsigned char *)(&canpack));
+        }
+    } else if (curAlgoMode == 1) {
+        for(int i =0;i<4;i++)
+        {
+            data1[i] = (cursendTime >> ((3-i)*8)) | 0x000000FF;
+        }
+        packetSend(0x01, 0x04, data1);
+
+        cursendTime = globalSynTime_ms;
+        for(int i=0;i<4;i++)
+        {
+            data2[i] = (cursendTime >> ((3-i)*8)) | 0x000000FF;
+        }
+        packetSend(0x02, 0x04, data2);
     }
-    packetSend(0x02, 0x04, data2);
 }
 
 //根据以太网报文更新显示
 void MainWindow::pageMsgRefresh()
 {
-    //返回状态解包
+    ;//返回状态解包
 }
+
+#ifdef SERIAL_DEBUG_ENABLE
 
 //扫描当前可用串口
 void MainWindow::on_pushButton_4_clicked()
@@ -580,7 +623,7 @@ void MainWindow::on_pushButton_4_clicked()
     ui->comboBox->clear();
     ui->comboBox_2->clear();
 
-    for(int i=0;i<curAvailablePortList.size();i++) {
+    for(int i=0; i<curAvailablePortList.size(); i++) {
         ui->comboBox->addItem(curAvailablePortList.at(i));
         ui->comboBox_2->addItem(curAvailablePortList.at(i));
     }
@@ -651,29 +694,26 @@ void MainWindow::on_pushButton_3_clicked()
 //串口数据更新
 void MainWindow::serial1DataRefresh(speedUpdateFormat updatePack)
 {
-
+    ;
 }
 
 void MainWindow::serial2DataRefresh(speedUpdateFormat updatePack)
 {
-
+    ;
 }
+
+#endif
 
 //控制通信状态设置
 void MainWindow::on_pushButton_5_clicked()
 {
-    if(ui->pushButton_5->text() == "启动控制通讯")
-    {
+    if (ui->pushButton_5->text() == "启动控制通讯") {
         requestPacketFlag = 1;
         ui->pushButton_5->setText("停止控制通讯");
-    }
-    else if(ui->pushButton_5->text() == "停止控制通讯")
-    {
+    } else if(ui->pushButton_5->text() == "停止控制通讯") {
         requestPacketFlag = 0;
          ui->pushButton_5->setText("开始控制通讯");
-    }
-    else
-    {
+    } else {
         QMessageBox::critical(0, "警告！", "UDP通信状态异常！",QMessageBox::Cancel);
     }
 }
@@ -705,7 +745,7 @@ qint64 MainWindow::packetSend(unsigned char sendNo, unsigned char NodeCmd, unsig
 
         PC2CASFrame.EHeader = 0xAA55;
         PC2CASFrame.FrameTailer = 0x55AA;
-        PC2CASFrame.EType = 0x03;  //速度给定，这里与CAN对应
+        PC2CASFrame.EType = NodeCmd;
         PC2CASFrame.ELen = sizeof(PC2CASFrame);
 
         memset(SendBuffer, 0, sizeof(SendBuffer));
@@ -877,19 +917,19 @@ void MainWindow::upreupdateJudge(unsigned char sendNo, feedbackData sampleData)
     switch(sendNo) {
         case 1:
             laFData_CH[0].sampleTimeStamp = sampleData.sampleTimeStamp;
-            laFData_CH[0].pulseCnt = sampleData.pulseCnt;
+            laFData_CH[0].feedbackPosium = sampleData.feedbackPosium;
 
-            if(sampleData.pulseCnt == 0) {
+            if(sampleData.feedbackPosium == 0) {
 
             } else {
-                if(recPosiCnt_CH[0] >= maxStorageLen-1000) {
+                if (recPosiCnt_CH[0] >= maxStorageLen-1000) {
                     recPosiCnt_CH[0] = 0;
                     QMessageBox::critical(0, "警告！", "接收数据1即将存储满，请及时存储到本地！",QMessageBox::Cancel);
                 }
 
                 g_RecvTimeMS_CH1[recPosiCnt_CH[0]] = globalSynTime_ms;
-                fDataPosi_CH1[recPosiCnt_CH[0]].pulseCnt = sampleData.pulseCnt;
-                ui->label_12->setText(QString::number(sampleData.pulseCnt, 10));
+                fDataPosi_CH1[recPosiCnt_CH[0]].feedbackPosium = sampleData.feedbackPosium;
+                ui->PMSM2Posi->setText(QString::number(sampleData.feedbackPosium, 10));
             }
             recPosiCnt_CH[0]++;
 
@@ -897,9 +937,9 @@ void MainWindow::upreupdateJudge(unsigned char sendNo, feedbackData sampleData)
 
         case 2:
             laFData_CH[1].sampleTimeStamp = sampleData.sampleTimeStamp;
-            laFData_CH[1].pulseCnt = sampleData.pulseCnt;
+            laFData_CH[1].feedbackPosium = sampleData.feedbackPosium;
 
-            if(sampleData.pulseCnt == 0) {
+            if(sampleData.feedbackPosium == 0) {
 
             } else {
                 if(recPosiCnt_CH[1] >= maxStorageLen-1000) {
@@ -908,30 +948,11 @@ void MainWindow::upreupdateJudge(unsigned char sendNo, feedbackData sampleData)
                 }
 
                 g_RecvTimeMS_CH2[recPosiCnt_CH[1]] = globalSynTime_ms;
-                fDataPosi_CH2[recPosiCnt_CH[1]].pulseCnt = sampleData.pulseCnt;
-                ui->label_13->setText(QString::number(sampleData.pulseCnt, 10));
+                fDataPosi_CH2[recPosiCnt_CH[1]].feedbackPosium = sampleData.feedbackPosium;
+                ui->PMSM1Posi->setText(QString::number(sampleData.feedbackPosium, 10));
             }
             recPosiCnt_CH[1]++;
 
-        case 3:
-            laFData_CH[2].sampleTimeStamp = sampleData.sampleTimeStamp;
-            laFData_CH[2].pulseCnt = sampleData.pulseCnt;
-
-            if(sampleData.pulseCnt == 0) {
-
-            } else {
-                if(recPosiCnt_CH[2] >= maxStorageLen-1000) {
-                    recPosiCnt_CH[2] = 0;
-                    QMessageBox::critical(0, "警告！", "接收数据3即将存储满，请及时存储到本地！",QMessageBox::Cancel);
-                }
-
-                g_RecvTimeMS_CH3[recPosiCnt_CH[2]] = globalSynTime_ms;
-                fDataPosi_CH3[recPosiCnt_CH[2]].pulseCnt = sampleData.pulseCnt;
-                ui->label_13->setText(QString::number(sampleData.pulseCnt, 10));
-            }
-            recPosiCnt_CH[2]++;
-
-        break;
         default:
         break;
     }
@@ -954,19 +975,35 @@ void MainWindow::upreupdateJudge(unsigned char sendNo, feedbackData sampleData)
     */
 }
 
-
-void MainWindow::updateAvgPosi(short avgPosi)
+void MainWindow::updateRealTimeStatus(unsigned char sendNo, CASREPORTFRAME statusData)
 {
     static unsigned short cnt = 0;
-
     if (cnt >= maxStorageLen) {
         cnt =0;
         qDebug() << "out of record Range!\n";
     }
-    recordArray[cnt].recvTimeStamp = globalSynTime_ms;
-    recordArray[cnt].avgRecord = avgPosi;
-    recordArray[cnt].referSig = ui->refPosiSig->text().toInt();
-    //ui->avgPosi->setText(QString::number(avgPosi,10));
+
+    if (sendNo == 1) {
+        ui->PMSM1STA->setText("0x"+QString::number(statusData.statusWord, 16));  //状态字
+        ui->PMSM1Posi->setText(QString::number(statusData.motorPosiUM, 10));
+
+        qDebug() << "Motor1 In RealTimeStatus Deal! Posi:\n" << QString::number(statusData.motorPosiUM ,10) <<" um";
+
+        laFData_CH[sendNo-1].feedbackPosium = statusData.motorPosiUM;
+        laFData_CH[sendNo-1].sampleTimeStamp = statusData.localTimeMS;
+
+    } else if (sendNo == 2) {
+        ui->PMSM2STA->setText("0x"+QString::number(statusData.statusWord, 16));  //状态字
+        ui->PMSM2Posi->setText(QString::number(statusData.motorPosiUM, 10));
+
+        qDebug() << "Motor2 In RealTimeStatus Deal! Posi:\n" << QString::number(statusData.motorPosiUM ,10) <<" um";
+
+        laFData_CH[sendNo-1].feedbackPosium = statusData.motorPosiUM;
+        laFData_CH[sendNo-1].sampleTimeStamp = statusData.localTimeMS;
+
+    } else {
+        qDebug() << "Out of Motor ID Range! \n";
+    }
 }
 
 //滑窗平均速度计算 4个周期
@@ -988,7 +1025,7 @@ short AverageSpeedCal(uint32_t recvPulse)
         averageSpeed += ((pulseWindow[cnt]- pulseWindow[cnt-1])*coeff_arr[cnt-1])*50;
     }
 
-    return (short)(averageSpeed/(60*PULSENUM)); //rpm
+    return (short)(averageSpeed/60); //rpm
 }
 
 //CAN报文更新速度值
@@ -1002,7 +1039,7 @@ void MainWindow::UpdateFeedbackSpeed2rpm(speedUpdateFormat curSpeedTime)
 
 }
 
-//同步启动(暂未使用)
+//速度模式下同步启动(暂未使用)
 void MainWindow::on_synStart_clicked()
 {
     volatile unsigned int cursendTime = 0;
@@ -1046,12 +1083,12 @@ void MainWindow::on_speedGiven_clicked()
 
         if (ui->checkBox->isChecked()) {
             canpack.CANID.STDCANID.NodeGroupID = 0x01;  // 左电机
-            packetSend(0x01, 0x0, (unsigned char *)(&canpack)); //速度给定
+            packetSend(0x01, CANSpeedCmd, (unsigned char *)(&canpack)); //速度给定
         }
 
         if (ui->checkBox_2->isChecked()){
             canpack.CANID.STDCANID.NodeGroupID = 0x02;  // 右电机
-            packetSend(0x02, 0x0, (unsigned char *)(&canpack));
+            packetSend(0x02, CANSpeedCmd, (unsigned char *)(&canpack));
         }
     } else {
         //获取最新时间
@@ -1128,11 +1165,11 @@ EthUARRPRE MainWindow::preControllerUpdateY()
     return u_arr;
 }
 
-// 预测控制器更新 40ms为周期
+// 预测控制器更新 20ms为周期
 EthUARRPRE MainWindow::preControllerUpdate(uint32_t curTimeStamp, double *x_esti_arr, unsigned char prelen)
 {
     //discrete Model
-    uint8_t period_MS = 40;
+    uint8_t period_MS = 20;
 
     EthUARRPRE u_arr;
     uint8_t ii=0;
@@ -1237,13 +1274,13 @@ short* posiRefCal(unsigned int dstPosiIncre) {
     return speedRef;
 }
 
-//位置环给定位移运动：pulse
+//位置环给定位移运动：um
 void MainWindow::on_PosiLoopInit_clicked()
 {
     //1、获取初始位置:以最近一次获取到的脉冲数为基本值
-    ui->label_12->setText(QString::number(laFData_CH[0].pulseCnt, 10));
-    ui->label_13->setText(QString::number(laFData_CH[1].pulseCnt, 10));
-    ui->label_13->setText(QString::number(laFData_CH[2].pulseCnt, 10));
+    ui->PMSM1Posi->setText(QString::number(laFData_CH[0].feedbackPosium, 10));
+    ui->PMSM2Posi->setText(QString::number(laFData_CH[1].feedbackPosium, 10));
+    // ui->label_13->setText(QString::number(laFData_CH[2].feedbackPosium, 10));
 
     //终态参考位移给定
     posiRef = ui->refPosiSig->text().toInt();
@@ -1280,7 +1317,7 @@ void MainWindow::on_StorePMSM1_clicked()
     //写入内容
     for(int i = 0; i < recPosiCnt_CH[0]; i++)//写入10行
     {
-        out << g_RecvTimeMS_CH1[i] << "," << fDataPosi_CH1[i].pulseCnt << "\n";
+        out << g_RecvTimeMS_CH1[i] << "," << fDataPosi_CH1[i].feedbackPosium << "\n";
     }
 
     //关闭文件
@@ -1310,7 +1347,7 @@ void MainWindow::on_StorePMSM2_clicked()
     //写入内容
     for(int i = 0; i < recPosiCnt_CH[1]; i++)//写入10行
     {
-        out << g_RecvTimeMS_CH2[i] << "," << fDataPosi_CH2[i].pulseCnt << "\n";
+        out << g_RecvTimeMS_CH2[i] << "," << fDataPosi_CH2[i].feedbackPosium << "\n";
     }
 
     //关闭文件

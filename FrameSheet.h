@@ -65,6 +65,7 @@ typedef struct timeStamp {
 #define POSIACQUIRE         (0x03)
 #define DATAUPLOAD          (0x1F)
 
+// ETH-CAS Mode
 typedef struct
 {
     uint32_t EHeader;        //Ethernet帧头
@@ -77,16 +78,6 @@ typedef struct
     uint32_t EChecksum;
     uint32_t FrameTailer;
 }EthControlFrame;
-
-typedef struct
-{
-    uint32_t EHeader;        //Ethernet帧头
-    uint32_t ENum;           //Ethernet帧号
-    uint32_t ELen;           //Ethernet长度 Byte
-    uint8_t EType;           //报文类型
-    CANFrame_STD canpack;
-    uint32_t FrameTailer;
-}EthControlFrameSingleCAS;
 
 typedef struct
 {
@@ -120,32 +111,47 @@ typedef struct {
     short preGivenSpeed[15];    //rpm
 }EthUARRPRE;
 
-/* 报文协议定义
-ETH: 0x01 位置查询
-     0x02 速度给定
-     0x1E 时间同步
-     0x1F 存储数据读取
-(存疑)
+// CAS mode
+typedef struct {
+    uint32_t EHeader;        //Ethernet帧头
+    uint32_t ENum;           //Ethernet帧号
+    uint32_t ELen;           //Ethernet长度 Byte
+    uint8_t EType;           //报文类型
+    CANFrame_STD canpack;
+    uint32_t FrameTailer;
+}EthControlFrameSingleCAS;
 
-CAS: 0x01 位置查询
-     0x01 速度给定
-     0x04 时间同步
-     0x0A 存储数据读取
- */
+typedef struct {
+    uint32_t EHeader;        // Ethernet帧头
+    uint32_t ENum;           // Ethernet帧号
+    uint32_t ELen;           // Ethernet长度 Byte
+    uint8_t EType;           // 报文类型
+    uint8_t CASNodeID;       // 数据来源
+    uint8_t curWorkMode;     // 当前工作模式
+    uint16_t statusWord;     // 状态字
+    uint32_t localTimeMS;    // 上报时间
+    uint32_t motorPosiUM;    // 当前绝对位置
+    short motorRealTimeTorqueNM; //实时转矩
+    short motorAveragePhaseAmp;  //平均相电流
+    uint32_t FrameTailer;
+} CASREPORTFRAME;
+Q_DECLARE_METATYPE(CASREPORTFRAME);
 
+// ETH-CAS Mode
+
+
+// CAS Mode
 #define CANSpeedCmd                     (1)
 #define CANSpeedPreCmd                  (2)
 #define CANOperationModeCmd             (3)
 #define CANTimeSyncCmd                  (4)
-#define CANPisiAcquireCmd               (5)
+#define CANPosiAcquireCmd               (5)
 #define CANTimeSyncErrorCalCmd          (6)
 #define CANLocalPITestCmd               (7)
 #define CANDriverInfoAcquire            (10)
 
-
 //串口通信帧格式（其实没啥用，仅作为编程参考）
-typedef struct serialData
-{
+typedef struct serialData {
     unsigned char FrameHeader_1;
     unsigned char FrameHeader_2;
     unsigned char reCVSource;
@@ -156,22 +162,21 @@ typedef struct serialData
 }SerialFrame;
 
 //自定义数据传递结构
-typedef struct speedFormat
-{
+typedef struct speedFormat {
     unsigned short curSpeed;    //反馈速度
     uint32_t timeStamp;         //ms时间戳
 }speedUpdateFormat;
 Q_DECLARE_METATYPE(speedUpdateFormat);
 
 typedef struct {
+    uint8_t dataSource;
     uint16_t frameNum;
     uint32_t sampleTimeStamp;
-    int32_t pulseCnt;
+    int32_t feedbackPosium;
 }feedbackData;
 Q_DECLARE_METATYPE(feedbackData);
 
-typedef struct
-{
+typedef struct {
     uint32_t recvTimeStamp;
     uint32_t referSig;
     int16_t avgRecord;

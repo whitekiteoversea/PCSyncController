@@ -12,14 +12,14 @@ int main(int argc, char *argv[])
     a.setFont(QFont("Microsoft Yahei", 9));
     //a.setWindowIcon(QIcon(":/main.ico"));
     //注册传输数据结构体
-    //qRegisterMetaType<speedUpdateFormat>("speedUpdateFormat");
+    qRegisterMetaType<speedUpdateFormat>("speedUpdateFormat");
     qRegisterMetaType<feedbackData>("feedbackData");
+    qRegisterMetaType<CASREPORTFRAME>("CASREPORTFRAME");
 
     MainWindow w;
-    w.setWindowTitle("仓库转运网络化控制系统运动控制上位机");
+    w.setWindowTitle("龙门负载控制子系统上位机");
 
     w.setWindowFlags(Qt::Widget | Qt::WindowMinMaxButtonsHint | Qt::WindowCloseButtonHint);
-    //w.setFixedSize(971,828);
     w.show();
     return a.exec();
 }

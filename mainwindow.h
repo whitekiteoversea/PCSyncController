@@ -55,21 +55,24 @@ signals:
 
 private slots:
     void onTimeout(unsigned int recvCurTimeStamp_Ms); //超时打印时间戳
+
     void on_timerSet_clicked();              //定时器开启/关闭
     void pageMsgRefresh();                   //界面信息更新
     void realtimeDataSlot();                 //定时器调用，速度显示刷新
 
     void on_synStop_clicked();               //同步停车
+#ifdef SERIAL_DEBUG_ENABLE
     void on_pushButton_4_clicked();          //扫描可用串口
     void on_pushButton_2_clicked();          //连接指定串口电机1并加锁
     void on_pushButton_3_clicked();          //连接指定串口电机2并加锁
 
     void serial1DataRefresh(speedUpdateFormat updatePack); //串口1数据更新
     void serial2DataRefresh(speedUpdateFormat updatePack); //串口2数据更新
+#endif
 
-    void upreupdateJudge(unsigned char sendNo, feedbackData sampleData);  //判断C-A通道是否需要更新u_arr
-    void rttDelayUpdate(unsigned char sendNo, feedbackData sampleData);  //RTT更新
-    void updateAvgPosi(short avgPosi); //平均同步位置信息更新
+    void upreupdateJudge(unsigned char sendNo, feedbackData sampleData);        // 判断C-A通道是否需要更新u_arr
+    void rttDelayUpdate(unsigned char sendNo, feedbackData sampleData);         // RTT更新
+    void updateRealTimeStatus(unsigned char sendNo, CASREPORTFRAME statusData);
 
     //以太网报文更新数据
     void UpdateFeedbackSpeed1rpm(speedUpdateFormat curSpeedTime);
