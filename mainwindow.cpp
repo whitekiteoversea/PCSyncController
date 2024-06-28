@@ -366,27 +366,6 @@ void MainWindow::sendGivenPreSpeedSig(unsigned char sendNo, feedbackData sampleD
     CANFrame_STD canpack[10];
     uint8_t ii =0;
     EthUARRPRE u_arr;
-
-    //离散预测控制器
-    //preControllerUpdate(sampleData, 10);
-
-    //输出反馈控制器
-//    u_arr = preControllerUpdateY();
-
-//    //填写报文内容
-//    for (ii=0;ii<prelen;ii++) {
-//        canpack[ii].CANID.STDCANID.CTRCode = 0x02;      //预测速度报文分发
-//        canpack[ii].CANID.STDCANID.NodeGroupID = sendNo;
-//        canpack[ii].CANData[0] = (g_FrameNum_CH[0] & 0xFF00) >> 8;        //只有速度给定和速度反馈查询需要帧号，并且由于速度反馈是主从式的，所以帧号只能由PC端发起
-//        canpack[ii].CANData[1] = g_FrameNum_CH[0] & 0x00FF;
-//        ptr = &(canpack[ii].CANData[2]);
-//        memcpy(ptr, &curTimeStamp,sizeof(curTimeStamp));
-//        ptr = &(canpack[ii].CANData[5]);
-//        memcpy(ptr, &(u_arr.preGivenSpeed[ii]), sizeof(short));
-//    }
-
-//    packetSend(sendNo, 2, (unsigned char *)canpack);
-//    g_FrameNum_CH[0]++;
 }
 
 //定时器时基分配函数
@@ -1207,26 +1186,6 @@ unsigned short SMCpreController(short *x)
     return smcOut;
 }
 
-
-//0x1F 发送大量数据读取请求 这个不需要回复 仅告知CAS停止获取新数据 需要CAS处于静止时生效
-void MainWindow::on_pushButton_6_clicked()
-{
-    unsigned char data1[8] = {0};
-    unsigned int curSendTimeStamp = globalSynTime_ms;
-
-    //获取时间戳
-    for(int ii=0;ii<4;ii++) {
-        data1[3-ii] = (uint8_t) (curSendTimeStamp & 0xFF);
-        curSendTimeStamp >>= 8; //右移8位
-    }
-    data1[6] = 0x01;  //告知请求
-
-    //向0x01发送读取请求
-    packetSend(0x01, 0x1F, data1);
-    //向0x02发送读取请求
-    //packetSend(0x02, 0x1F, data1);
-}
-
 //存储文件路径选取
 char* MainWindow::GetCuurentFilePath(void)
 {
@@ -1380,14 +1339,56 @@ uint8_t crossCouplingSync_Update()
    return duss_result;
 }
 
+// 0x0A 发送大量数据读取请求 告知CAS停止获取新数据 需要CAS处于静止时生效
+// data[4]为子类型 01为请求 02为传输 03为结束
+void MainWindow::on_readCAS_clicked()
+{
+   CANFrame_STD canpack;
+   unsigned int curSendTimeStamp = globalSynTime_ms;
 
-// 工作模式选择
-void MainWindow::on_StorePMSM2_2_clicked()
+   //获取时间戳
+   for(int ii=0;ii<4;ii++) {
+        canpack.CANData[3-ii] = (uint8_t) (curSendTimeStamp & 0xFF);
+        curSendTimeStamp >>= 8; //右移8位
+   }
+   canpack.CANID.STDCANID.CTRCode = 0x0A;
+   canpack.CANID.STDCANID.MasterOrSlave = 1;
+
+   if (ui->readCAS->text() == "请求CAS传输") {
+        if (curAlgoMode == 0) {
+            canpack.CANData[4] = 0x01;  // 告知请求
+            if (ui->checkBox->isChecked()) {
+                canpack.CANID.STDCANID.NodeGroupID = 1;
+                packetSend(0x01, 0x0A, ((uint8_t *)&canpack));
+            } else if (ui->checkBox_2->isChecked()) {
+                canpack.CANID.STDCANID.NodeGroupID = 2;
+                packetSend(0x02, 0x0A, ((uint8_t *)&canpack));
+            }
+        } else if (curAlgoMode == 1) {
+            ;
+        }
+        ui->CASUploadStatus->setText("");
+   } else if (ui->readCAS->text() == "开始CAS传输") {
+
+   } else if (ui->readCAS->text() == "结束CAS传输") {
+
+   } else {
+        if (ui->CASUploadStatus->text() == "空闲中") {
+            ui->readCAS->setText("请求CAS传输");
+        }
+   }
+}
+
+
+// CAS 工作模式设置
+void MainWindow::on_PMSM1workModeSetup_clicked()
 {
 
+}
 
 
-
+void MainWindow::on_PMSM2workModeSetup_clicked()
+{
 
 }
 

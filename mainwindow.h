@@ -82,11 +82,15 @@ private slots:
     void on_synStart_clicked();
     void on_speedGiven_clicked();
     void on_pushButton_10_clicked();
-    void on_pushButton_6_clicked();
     void on_PosiLoopInit_clicked();
     void on_StorePMSM2_clicked();
     void on_StorePMSM1_clicked();
-    void on_StorePMSM2_2_clicked();
+
+    void on_readCAS_clicked();
+
+    void on_PMSM1workModeSetup_clicked();
+    void on_PMSM2workModeSetup_clicked();
+
 
 private:
     Ui::MainWindow *ui;

@@ -84,13 +84,13 @@ void Etherudp::read_data()
 
             switch (recvCASFrame.EType) {
                 case CANPosiAcquireCmd:  //状态反馈
-
-                    // 大小端处理
-
-
                     emit updateStatus(recvCASFrame.CASNodeID, recvCASFrame);
                     qDebug() << "FeedbackPosi: " + QString::number(recvCASFrame.motorPosiUM ,10) + "um \n";
-                    break;
+                break;
+
+                case CANDriverInfoAcquire:  //SDRAM数据上传
+
+                break;
 
                 default:
                     break;

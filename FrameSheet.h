@@ -126,6 +126,7 @@ typedef struct {
     uint32_t ENum;           // Ethernet帧号
     uint32_t ELen;           // Ethernet长度 Byte
     uint8_t EType;           // 报文类型
+    uint8_t ESubType;        // 报文子类型
     uint8_t CASNodeID;       // 数据来源
     uint8_t curWorkMode;     // 当前工作模式
     uint16_t statusWord;     // 状态字
@@ -136,6 +137,30 @@ typedef struct {
     uint32_t FrameTailer;
 } CASREPORTFRAME;
 Q_DECLARE_METATYPE(CASREPORTFRAME);
+
+// SDRAM数据记录格式
+typedef struct {
+    uint32_t local_time_ms;
+    uint32_t magnetPosium;
+} SDRAM_DATA_STO;
+
+#define MAXLOADPACKNUM  (150)
+
+// ETYPE = 0x
+
+typedef struct {
+    uint32_t EHeader;        // Ethernet帧头
+    uint32_t ENum;           // Ethernet帧号
+    uint32_t ELen;           // Ethernet长度 Byte
+    uint32_t EType;          // 数据包类型
+    uint32_t ReportStep;     // 当前上报阶段
+    uint32_t ReportCASID;    // 上报节点
+    uint32_t TotalPackNum;   // 总分包数
+    uint32_t CurPackNum;     // 当前分包号
+    uint32_t CurPackDataNum; // 当前分包内的数据条数
+    SDRAM_DATA_STO data[MAXLOADPACKNUM];   // 单包最大
+    uint32_t FrameTailer;
+} ETHDataUploadPack;
 
 // ETH-CAS Mode
 

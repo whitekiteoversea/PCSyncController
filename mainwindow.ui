@@ -503,80 +503,6 @@
      </layout>
     </widget>
    </widget>
-   <widget class="QGroupBox" name="groupBox_7">
-    <property name="geometry">
-     <rect>
-      <x>800</x>
-      <y>20</y>
-      <width>301</width>
-      <height>191</height>
-     </rect>
-    </property>
-    <property name="sizePolicy">
-     <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-      <horstretch>0</horstretch>
-      <verstretch>0</verstretch>
-     </sizepolicy>
-    </property>
-    <property name="minimumSize">
-     <size>
-      <width>141</width>
-      <height>151</height>
-     </size>
-    </property>
-    <property name="title">
-     <string>数据读取及存储</string>
-    </property>
-    <layout class="QVBoxLayout" name="verticalLayout_3">
-     <item>
-      <widget class="QPushButton" name="pushButton_6">
-       <property name="text">
-        <string>请求读取</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="StorePMSM1">
-       <property name="text">
-        <string>读取PMSM1</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="StorePMSM2">
-       <property name="text">
-        <string>读取PMSM2</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QLabel" name="label_30">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="text">
-        <string>读取状态:</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QLabel" name="label_29">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="text">
-        <string/>
-       </property>
-      </widget>
-     </item>
-    </layout>
-   </widget>
    <widget class="QGroupBox" name="groupBox_8">
     <property name="geometry">
      <rect>
@@ -779,7 +705,7 @@
       </widget>
      </item>
      <item>
-      <widget class="QPushButton" name="StorePMSM2_2">
+      <widget class="QPushButton" name="PMSM1workModeSetup">
        <property name="text">
         <string>电机1设置</string>
        </property>
@@ -827,7 +753,7 @@
       </widget>
      </item>
      <item>
-      <widget class="QPushButton" name="StorePMSM2_3">
+      <widget class="QPushButton" name="PMSM2workModeSetup">
        <property name="text">
         <string>电机2设置</string>
        </property>
@@ -924,6 +850,235 @@
       <string/>
      </property>
     </widget>
+   </widget>
+   <widget class="QWidget" name="">
+    <property name="geometry">
+     <rect>
+      <x>800</x>
+      <y>20</y>
+      <width>314</width>
+      <height>191</height>
+     </rect>
+    </property>
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <item>
+      <widget class="QGroupBox" name="groupBox_7">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>141</width>
+         <height>151</height>
+        </size>
+       </property>
+       <property name="title">
+        <string>数据获取</string>
+       </property>
+       <widget class="QPushButton" name="readCAS">
+        <property name="geometry">
+         <rect>
+          <x>12</x>
+          <y>30</y>
+          <width>80</width>
+          <height>24</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>请求CAS传输</string>
+        </property>
+       </widget>
+       <widget class="QLabel" name="CASUploadStatus">
+        <property name="geometry">
+         <rect>
+          <x>12</x>
+          <y>142</y>
+          <width>51</width>
+          <height>16</height>
+         </rect>
+        </property>
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="text">
+         <string>空闲中</string>
+        </property>
+       </widget>
+       <widget class="QLabel" name="label_29">
+        <property name="geometry">
+         <rect>
+          <x>12</x>
+          <y>164</y>
+          <width>16</width>
+          <height>16</height>
+         </rect>
+        </property>
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+       <widget class="QLabel" name="label_35">
+        <property name="geometry">
+         <rect>
+          <x>12</x>
+          <y>120</y>
+          <width>51</width>
+          <height>16</height>
+         </rect>
+        </property>
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="text">
+         <string>传输状态:</string>
+        </property>
+       </widget>
+      </widget>
+     </item>
+     <item>
+      <spacer name="horizontalSpacer_5">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>18</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QGroupBox" name="groupBox_11">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>141</width>
+         <height>151</height>
+        </size>
+       </property>
+       <property name="title">
+        <string>数据读取</string>
+       </property>
+       <widget class="QPushButton" name="readFile">
+        <property name="geometry">
+         <rect>
+          <x>12</x>
+          <y>30</y>
+          <width>80</width>
+          <height>24</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>请求读取</string>
+        </property>
+       </widget>
+       <widget class="QPushButton" name="StorePMSM1">
+        <property name="geometry">
+         <rect>
+          <x>12</x>
+          <y>60</y>
+          <width>80</width>
+          <height>24</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>读取PMSM1</string>
+        </property>
+       </widget>
+       <widget class="QPushButton" name="StorePMSM2">
+        <property name="geometry">
+         <rect>
+          <x>12</x>
+          <y>90</y>
+          <width>80</width>
+          <height>24</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>读取PMSM2</string>
+        </property>
+       </widget>
+       <widget class="QLabel" name="label_36">
+        <property name="geometry">
+         <rect>
+          <x>12</x>
+          <y>142</y>
+          <width>51</width>
+          <height>16</height>
+         </rect>
+        </property>
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="text">
+         <string>正在读取</string>
+        </property>
+       </widget>
+       <widget class="QLabel" name="label_37">
+        <property name="geometry">
+         <rect>
+          <x>12</x>
+          <y>164</y>
+          <width>16</width>
+          <height>16</height>
+         </rect>
+        </property>
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+       <widget class="QLabel" name="label_38">
+        <property name="geometry">
+         <rect>
+          <x>12</x>
+          <y>120</y>
+          <width>51</width>
+          <height>16</height>
+         </rect>
+        </property>
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="text">
+         <string>读取状态:</string>
+        </property>
+       </widget>
+      </widget>
+     </item>
+    </layout>
    </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
