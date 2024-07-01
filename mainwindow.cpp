@@ -15,6 +15,7 @@
 #include <complex>
 #include "pid.h"
 #include "cccControl.h"
+#include <cmath>
 
 
 // 对于ETH发送的处理其实比较粗陋，应该初始化一个队列对象，队列对象提供一个发送接口，每次发送都是向队列对象
@@ -37,8 +38,10 @@
 #define initFrameNum_SpeedPre 40000
 #define maxFrameNum_SpeedPre 59999
 
-// 编码器参数常数
-// #define PULSENUM 2060
+
+// 同步控制相关
+volatile unsigned char posiSyncModeEnabled = 0;
+
 
 //可用串口列表
 QStringList *availbleSerialPort;
@@ -199,7 +202,7 @@ MainWindow::MainWindow(QWidget *parent)
     //本地计时器对象
     QTimer *localTimer = new QTimer();
     localTimer->setInterval(1);                     //1ms间隔
-    localTimer->setTimerType(Qt::PreciseTimer);     //精确定时器
+    localTimer->setTimerType(Qt::PreciseTimer);     //精确定时器(其实一点也不精确)
     localTimer->moveToThread(localTotalTimeThread); //移动到其他线程
 
     //操作子线程中的定时器
@@ -318,9 +321,9 @@ void MainWindow::sendRequestSig()
         }
     } else if (curAlgoMode == 1) {
         //填写报文内容
-        canpack.CANID.STDCANID.MasterOrSlave = 1;       //Master下发
+        canpack.CANID.STDCANID.MasterOrSlave = 1;       // Master下发
         canpack.CANID.STDCANID.CTRCode = CANPosiAcquireCmd;          //
-        canpack.CANID.STDCANID.NodeGroupID = 0x01;      //广播
+        canpack.CANID.STDCANID.NodeGroupID = 0x01;      // 广播
 
         canpack.CANData[0] = (g_PosiFeedNum_CH & 0xFF00) >> 8;
         canpack.CANData[1] = g_PosiFeedNum_CH & 0x00FF;
@@ -402,6 +405,11 @@ void MainWindow::onTimeout(unsigned int RecvCurTimeStamp_Ms)
         sendRequestSig();
     }
 
+    // 需要确定控制频率
+    if (posiSyncModeEnabled == 1) {
+        posiSyncAlgoTask();
+    }
+
     timeSyncPacketCnt++;
     requestPacketCnt++;
 }
@@ -455,6 +463,10 @@ void MainWindow::plotParaSetup()
     ui->speedRecord->graph(0)->setPen(QPen(QColor(40, 110, 255)));
     ui->speedRecord->addGraph(); // red line
     ui->speedRecord->graph(1)->setPen(QPen(QColor(255, 110, 40)));
+    ui->speedRecord->addGraph(); //GREEN
+    ui->speedRecord->graph(2)->setPen(QPen(QColor(255, 0, 0)));
+    ui->speedRecord->addGraph(); //YELLOW
+    ui->speedRecord->graph(3)->setPen(QPen(QColor(255, 255, 0)));
 
 #ifdef XAXIS_ENABLE
     ui->speedRecord->addGraph(); // black line
@@ -466,7 +478,7 @@ void MainWindow::plotParaSetup()
     timeTicker->setTimeFormat("%m:%s:%z");                    //时间格式
     ui->speedRecord->xAxis->setTicker(timeTicker);            //x轴跟随本地时间
     ui->speedRecord->axisRect()->setupFullAxesBox();
-    // ui->speedRecord->yAxis->setRange(-100, 2000);            //y轴给定上下限
+    ui->speedRecord->yAxis->setRange(-4000, 510000);            //y轴给定上下限
 
     //定义坐标轴名称
     ui->speedRecord->plotLayout()->insertRow(0);
@@ -485,14 +497,14 @@ void MainWindow::plotParaSetup()
     //增加图例
     ui->speedRecord->legend->setVisible(true);
     ui->speedRecord->legend->setFont(QFont("Helvetica",9)); //图例 字体
-    lineNames << "PMSM1"<< "PMSM2";
+    lineNames << "PMSM1"<< "PMSM2" << "Torque1" << "Torque2";
 
 #ifdef XAXIS_ENABLE
     lineNames << "PMSM3" ;
 #endif
-
-    ui->speedRecord->graph(0)->setName(lineNames[0]);
-    ui->speedRecord->graph(1)->setName(lineNames[1]);
+    for (int cnt =0; cnt <4; cnt++) {
+        ui->speedRecord->graph(cnt)->setName(lineNames[cnt]);
+    }
 
 #ifdef XAXIS_ENABLE
     ui->speedRecord->graph(2)->setName(lineNames[2]);
@@ -521,7 +533,12 @@ void MainWindow::realtimeDataSlot()
 
     //最大帧数 50帧
     if (key-lastPointKey > 0.02) {
-        ui->speedRecord->graph(0)->addData(key, laFData_CH[0].feedbackPosium);
+        ui->speedRecord->graph(0)->addData(key, (laFData_CH[0].feedbackPosium - LEFT_START_POSI));
+        ui->speedRecord->graph(1)->addData(key, (laFData_CH[1].feedbackPosium - RIGHT_START_POSI));
+        ui->speedRecord->graph(2)->addData(key, (laFData_CH[2].motorRealTimeTorqueNM*MOTORTORQUE/1000));
+        ui->speedRecord->graph(3)->addData(key, (laFData_CH[3].motorRealTimeTorqueNM*MOTORTORQUE/1000));
+
+        // ReScale
         ui->speedRecord->graph(0)->rescaleValueAxis(true); // rescale value (vertical) axis to fit the current data:
         lastPointKey = key;
     } 
@@ -552,18 +569,18 @@ void MainWindow::on_synStop_clicked()
     if (curAlgoMode == 0) {
 
         canpack.CANID.STDCANID.MasterOrSlave = 1;
-        canpack.CANID.STDCANID.CTRCode = CANSpeedCmd;
+        canpack.CANID.STDCANID.CTRCode = CANTargetCmd;
         canpack.CANID.STDCANID.Reserve = 0;
 
         canpack.CANData[4] = 0;
         canpack.CANData[5]= 0;
         if (ui->checkBox->isChecked()) {
             canpack.CANID.STDCANID.NodeGroupID = 0x01;  // 左电机
-            packetSend(0x01, CANSpeedCmd, (unsigned char *)(&canpack));
+            packetSend(0x01, CANTargetCmd, (unsigned char *)(&canpack));
         }
         if (ui->checkBox_2->isChecked()) {
             canpack.CANID.STDCANID.NodeGroupID = 0x02;  // 右电机
-            packetSend(0x02, CANSpeedCmd, (unsigned char *)(&canpack));
+            packetSend(0x02, CANTargetCmd, (unsigned char *)(&canpack));
         }
     } else if (curAlgoMode == 1) {
         for(int i =0;i<4;i++)
@@ -957,6 +974,8 @@ void MainWindow::upreupdateJudge(unsigned char sendNo, feedbackData sampleData)
 void MainWindow::updateRealTimeStatus(unsigned char sendNo, CASREPORTFRAME statusData)
 {
     static unsigned short cnt = 0;
+    volatile static int syncErrorUM = 0;
+
     if (cnt >= maxStorageLen) {
         cnt =0;
         qDebug() << "out of record Range!\n";
@@ -965,24 +984,34 @@ void MainWindow::updateRealTimeStatus(unsigned char sendNo, CASREPORTFRAME statu
     if (sendNo == 1) {
         ui->PMSM1STA->setText("0x"+QString::number(statusData.statusWord, 16));  //状态字
         ui->PMSM1Posi->setText(QString::number(statusData.motorPosiUM, 10));
-
-        qDebug() << "Motor1 In RealTimeStatus Deal! Posi:\n" << QString::number(statusData.motorPosiUM ,10) <<" um";
-
         laFData_CH[sendNo-1].feedbackPosium = statusData.motorPosiUM;
         laFData_CH[sendNo-1].sampleTimeStamp = statusData.localTimeMS;
+        laFData_CH[sendNo-1].motorRealTimeTorqueNM = statusData.motorRealTimeTorqueNM;
+        ui->torque1->setText(QString::number(statusData.motorRealTimeTorqueNM, 10));
+        ui->PMSM1OM->setText(QString::number(statusData.curWorkMode, 10));
 
     } else if (sendNo == 2) {
         ui->PMSM2STA->setText("0x"+QString::number(statusData.statusWord, 16));  //状态字
         ui->PMSM2Posi->setText(QString::number(statusData.motorPosiUM, 10));
 
-        qDebug() << "Motor2 In RealTimeStatus Deal! Posi:\n" << QString::number(statusData.motorPosiUM ,10) <<" um";
-
         laFData_CH[sendNo-1].feedbackPosium = statusData.motorPosiUM;
         laFData_CH[sendNo-1].sampleTimeStamp = statusData.localTimeMS;
+        laFData_CH[sendNo-1].motorRealTimeTorqueNM = statusData.motorRealTimeTorqueNM;
+        ui->torque2->setText(QString::number(statusData.motorRealTimeTorqueNM, 10));
+        ui->PMSM2OM->setText(QString::number(statusData.curWorkMode, 10));
 
     } else {
         qDebug() << "Out of Motor ID Range! \n";
     }
+
+    // 更新同步误差
+    if (ui->checkBox->isChecked() && ui->checkBox_2->isChecked()) {
+        syncErrorUM = laFData_CH[0].feedbackPosium - LEFT_START_POSI - laFData_CH[1].feedbackPosium + RIGHT_START_POSI;
+        ui->posiSyncError->setText(QString::number(syncErrorUM, 'f', 6));
+        ui->rotateAngle->setText(QString::number( (atan((double)syncErrorUM/ZAXIS_DISTANCE)),'f',6));
+    }
+
+
 }
 
 //滑窗平均速度计算 4个周期
@@ -1043,7 +1072,7 @@ void MainWindow::on_synStart_clicked()
     qDebug() << "2发送成功";
 }
 
-//测试用：根据面板上的速度给定进行同步运动
+//测试用：根据面板上的速度给定进行运动
 void MainWindow::on_speedGiven_clicked()
 {
     uint32_t curTimeStamp;
@@ -1062,12 +1091,12 @@ void MainWindow::on_speedGiven_clicked()
 
         if (ui->checkBox->isChecked()) {
             canpack.CANID.STDCANID.NodeGroupID = 0x01;  // 左电机
-            packetSend(0x01, CANSpeedCmd, (unsigned char *)(&canpack)); //速度给定
+            packetSend(0x01, CANTargetCmd, (unsigned char *)(&canpack)); //指令给定
         }
 
         if (ui->checkBox_2->isChecked()){
             canpack.CANID.STDCANID.NodeGroupID = 0x02;  // 右电机
-            packetSend(0x02, CANSpeedCmd, (unsigned char *)(&canpack));
+            packetSend(0x02, CANTargetCmd, (unsigned char *)(&canpack));
         }
     } else {
         //获取最新时间
@@ -1380,15 +1409,84 @@ void MainWindow::on_readCAS_clicked()
 }
 
 
-// CAS 工作模式设置
+// CAS 工作模式设置 0x03
 void MainWindow::on_PMSM1workModeSetup_clicked()
 {
+   CANFrame_STD canpack;
+   if (curAlgoMode == 0){
+        canpack.CANID.STDCANID.MasterOrSlave = 1; //Master下发
+        canpack.CANID.STDCANID.CTRCode = 0x00; // 在以太网中未使用, 仅ETH-CAS模式下有效
+        canpack.CANID.STDCANID.Reserve = 0;
 
+        if (ui->checkBox->isChecked()) {
+            canpack.CANID.STDCANID.NodeGroupID = 0x01;  // 左电机
+            canpack.CANData[4] = ui->modeSet1->currentText().toInt();
+            packetSend(0x01, CANOperationModeCmd, (unsigned char *)(&canpack)); //指令给定
+        }
+
+        if (ui->checkBox_2->isChecked()){
+            canpack.CANID.STDCANID.NodeGroupID = 0x02;  // 右电机
+            canpack.CANData[4] = ui->modeSet2->currentText().toInt();
+            packetSend(0x02, CANOperationModeCmd, (unsigned char *)(&canpack));
+        }
+    }
 }
 
 
 void MainWindow::on_PMSM2workModeSetup_clicked()
 {
+
+}
+
+// 位置环同步算法使能
+void MainWindow::on_PosiLoopSyncInit_clicked()
+{
+    static int initZOffAxisPosi[2] ={laFData_CH[0].feedbackPosium, laFData_CH[1].feedbackPosium};
+    int cmp = 0;
+
+    // 先检查当前Z轴相对位移位置
+
+    // 调整双Z轴至误差为0? (在运动过程中调整吧)
+
+    // 给定数据范围检查
+    cmp = ui->refPosiSig->text().toInt() + initZOffAxisPosi[0];
+    if ((cmp < LEFT_START_POSI) || (cmp > LEFT_END_POSI)) {
+        QMessageBox::critical(0, "警告！", "Z轴左电机预设运动目标超限，请重新设置目标位置坐标！...",QMessageBox::Cancel);
+        goto __end;
+    }
+
+    cmp = ui->refPosiSig->text().toInt() + initZOffAxisPosi[1];
+    if ((cmp < RIGHT_START_POSI) || (cmp > RIGHT_END_POSI)) {
+        QMessageBox::critical(0, "警告！", "Z轴右电机预设运动目标超限，请重新设置目标位置坐标！...",QMessageBox::Cancel);
+        goto __end;
+    }
+
+    posiSyncModeEnabled = 1; // 启动同步运动
+
+__end:
+    statusLabel->setText(" Sync Task Setup Failed!");
+}
+
+// 基本同步控制
+void posiSyncAlgoTask(void)
+{
+
+    // 获得实时误差
+
+    // 更新任务目标代价函数(旋转角尽量小)
+
+    // 输出两个Z轴电机的参考速度 / 参考转矩
+    // 控制转矩得尽量快一些，速度可以相对低一些
+
+    // 发包
+}
+
+// 负载同步控制
+
+void MainWindow::on_PosiLoopInit_2_clicked()
+{
+    posiSyncModeEnabled = 0;
+    on_synStop_clicked();
 
 }
 

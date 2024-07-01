@@ -92,6 +92,10 @@ private slots:
     void on_PMSM2workModeSetup_clicked();
 
 
+    void on_PosiLoopSyncInit_clicked();
+
+    void on_PosiLoopInit_2_clicked();
+
 private:
     Ui::MainWindow *ui;
     QTimer *dataTimer;
@@ -122,5 +126,8 @@ uint8_t dpetc_U_update(unsigned char sendNo, feedbackData sampleData);
 
 short* posiRefCal(unsigned int dstPosiIncre); //根据目标位置增量生成速度参考曲线
 int satFunc(int inputS);
+
+// 基本同步控制算法
+void posiSyncAlgoTask(void);
 
 #endif // MAINWINDOW_H

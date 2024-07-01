@@ -12,8 +12,24 @@
 #define BufMaxStorageCnt        (6000)
 #define SingleShotMaxStorageCnt (BufMaxStorageCnt/2)
 
-#define MAXDELAYLEN             (5)
-#define MAXCASNODENUM           (2)
+#define MAXDELAYLEN                (5)
+#define MAXCASNODENUM              (2)
+
+// 左侧绝对量程： 8697903 um - 9203551 um
+#define LEFT_START_POSI            (8697903)
+#define LEFT_END_POSI              (9203551)
+
+// 右侧绝对量程： 9259537 um - 9769376 um
+#define RIGHT_START_POSI           (9259537)
+#define RIGHT_END_POSI             (9769376)
+
+// 定义安装高度同步补偿 LEFT-RIGHT =X
+#define SETUP_HIGH_COMPENSATION_US (0)
+// Z轴轴距
+#define ZAXIS_DISTANCE             (74000000)
+
+#define MOTORTORQUE                (2.80)
+
 
 #pragma pack(1)
 
@@ -125,8 +141,7 @@ typedef struct {
     uint32_t EHeader;        // Ethernet帧头
     uint32_t ENum;           // Ethernet帧号
     uint32_t ELen;           // Ethernet长度 Byte
-    uint8_t EType;           // 报文类型
-    uint8_t ESubType;        // 报文子类型
+    uint16_t EType;           // 报文类型
     uint8_t CASNodeID;       // 数据来源
     uint8_t curWorkMode;     // 当前工作模式
     uint16_t statusWord;     // 状态字
@@ -166,7 +181,7 @@ typedef struct {
 
 
 // CAS Mode
-#define CANSpeedCmd                     (1)
+#define CANTargetCmd                    (1)
 #define CANSpeedPreCmd                  (2)
 #define CANOperationModeCmd             (3)
 #define CANTimeSyncCmd                  (4)
@@ -198,6 +213,7 @@ typedef struct {
     uint16_t frameNum;
     uint32_t sampleTimeStamp;
     int32_t feedbackPosium;
+    short motorRealTimeTorqueNM;
 }feedbackData;
 Q_DECLARE_METATYPE(feedbackData);
 
