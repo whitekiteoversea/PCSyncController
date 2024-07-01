@@ -478,13 +478,13 @@ void MainWindow::plotParaSetup()
     timeTicker->setTimeFormat("%m:%s:%z");                    //时间格式
     ui->speedRecord->xAxis->setTicker(timeTicker);            //x轴跟随本地时间
     ui->speedRecord->axisRect()->setupFullAxesBox();
-    ui->speedRecord->yAxis->setRange(-4000, 510000);            //y轴给定上下限
+    ui->speedRecord->yAxis->setRange(-4000, 5100);            //y轴给定上下限
 
     //定义坐标轴名称
     ui->speedRecord->plotLayout()->insertRow(0);
     m_title = new QCPTextElement(ui->speedRecord,"反馈位置曲线图");
     ui->speedRecord->plotLayout()->addElement(0,0,m_title);
-    ui->speedRecord->yAxis->setLabel("Posi-unit");
+    ui->speedRecord->yAxis->setLabel("Posi-mm/Torque-0.001N.m");
     ui->speedRecord->xAxis->setLabel("Time-ms");
 
     //允许鼠标滚轮缩放和显示范围拖拽
@@ -533,10 +533,10 @@ void MainWindow::realtimeDataSlot()
 
     //最大帧数 50帧
     if (key-lastPointKey > 0.02) {
-        ui->speedRecord->graph(0)->addData(key, (laFData_CH[0].feedbackPosium - LEFT_START_POSI));
-        ui->speedRecord->graph(1)->addData(key, (laFData_CH[1].feedbackPosium - RIGHT_START_POSI));
-        ui->speedRecord->graph(2)->addData(key, (laFData_CH[2].motorRealTimeTorqueNM*MOTORTORQUE/1000));
-        ui->speedRecord->graph(3)->addData(key, (laFData_CH[3].motorRealTimeTorqueNM*MOTORTORQUE/1000));
+        ui->speedRecord->graph(0)->addData(key, (laFData_CH[0].feedbackPosium - LEFT_START_POSI)/1000);
+        ui->speedRecord->graph(1)->addData(key, (laFData_CH[1].feedbackPosium - RIGHT_START_POSI)/1000);
+        ui->speedRecord->graph(2)->addData(key, (laFData_CH[2].motorRealTimeTorqueNM*MOTORTORQUE));
+        ui->speedRecord->graph(3)->addData(key, (laFData_CH[3].motorRealTimeTorqueNM*MOTORTORQUE));
 
         // ReScale
         ui->speedRecord->graph(0)->rescaleValueAxis(true); // rescale value (vertical) axis to fit the current data:
@@ -1423,6 +1423,17 @@ void MainWindow::on_PMSM1workModeSetup_clicked()
             canpack.CANData[4] = ui->modeSet1->currentText().toInt();
             packetSend(0x01, CANOperationModeCmd, (unsigned char *)(&canpack)); //指令给定
         }
+    }
+}
+
+
+void MainWindow::on_PMSM2workModeSetup_clicked()
+{
+    CANFrame_STD canpack;
+    if (curAlgoMode == 0) {
+        canpack.CANID.STDCANID.MasterOrSlave = 1; //Master下发
+        canpack.CANID.STDCANID.CTRCode = 0x00; // 在以太网中未使用, 仅ETH-CAS模式下有效
+        canpack.CANID.STDCANID.Reserve = 0;
 
         if (ui->checkBox_2->isChecked()){
             canpack.CANID.STDCANID.NodeGroupID = 0x02;  // 右电机
@@ -1430,12 +1441,6 @@ void MainWindow::on_PMSM1workModeSetup_clicked()
             packetSend(0x02, CANOperationModeCmd, (unsigned char *)(&canpack));
         }
     }
-}
-
-
-void MainWindow::on_PMSM2workModeSetup_clicked()
-{
-
 }
 
 // 位置环同步算法使能
