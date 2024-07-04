@@ -93,7 +93,7 @@ void Etherudp::read_data()
                 case CANDriverInfoAcquire:  //SDRAM数据上传
                 if (recvCASFrame.subType == 0x00) { // 请求
                     emit readyToSDRAMTrans(recvCASFrame.CASNodeID);
-                } else if (recvCASFrame.subType == 0x02) { // 传输
+                } else if (recvCASFrame.subType == 0x01) { // 传输
                     memset(&recvCASSDRAMFrame, 0, sizeof(recvCASSDRAMFrame));
                     memcpy(&recvCASSDRAMFrame, etherRecvBuf, sizeof(recvCASSDRAMFrame));
 
@@ -103,6 +103,7 @@ void Etherudp::read_data()
                         frameSubpackArray[cnt].posi_um = recvCASSDRAMFrame.sdramSubPack[cnt].posi_um;
                     }
 
+                    qDebug() << "RECV PAck:" << recvCASSDRAMFrame.SubPackNum << "totalPackNum: " <<recvCASSDRAMFrame.totalSubPackNum << "\n";
                     emit updateSDRAMData(recvCASFrame.CASNodeID, \
                                          recvCASSDRAMFrame.SubPackNum, \
                                          recvCASSDRAMFrame.totalSubPackNum, \

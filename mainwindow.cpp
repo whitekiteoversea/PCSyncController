@@ -1380,6 +1380,9 @@ void MainWindow::on_readCAS_clicked()
 
    if (ui->readCAS->text() == "请求CAS传输") {
         if (curAlgoMode == 0) {
+            // 停止时钟发送
+            on_timerSet_clicked();
+
             canpack.CANData[4] = 0x00;  // 告知请求
 
             if (ui->checkBox->isChecked() && ui->checkBox_2->isChecked()) {
@@ -1397,12 +1400,12 @@ void MainWindow::on_readCAS_clicked()
         } else if (curAlgoMode == 1) {
             ;
         }
-        ui->CASUploadStatus->setText("");
+        ui->CASUploadStatus->setText("等待请求回复");
    } else if (ui->readCAS->text() == "开始CAS传输") {
         canpack.CANID.STDCANID.NodeGroupID = 1;
         canpack.CANData[4] = 0x01;
         packetSend(transNum, 0x0A, ((uint8_t *)&canpack));
-        ui->readCAS->setText("等待CAS传输完成");
+        ui->CASUploadStatus->setText("等待CAS传输完成");
    }
 }
 
@@ -1505,6 +1508,9 @@ void MainWindow::updateSDRAMDataSlot(unsigned char sendNo, unsigned char current
             // 调用写入文件函数
 
             totalNum = 0;
+             QMessageBox::critical(0, "警告！", "数据接收已完成！！...",QMessageBox::Cancel);
+            ui->CASUploadStatus->setText("CAS请求数据接收已完成！");
+             ui->readCAS->setText("请求CAS传输");
         } else if(currentSubPackNum < totalPackNum) {
             while (cnt <= writeNum) {
                 onceRecvArray[recordCnt].g_time_ms = array[cnt].g_time_ms;
@@ -1544,6 +1550,6 @@ void MainWindow::readyToSDRAMTransSlot(unsigned char sendNo)
 {
     if (ui->readCAS->text() == "请求CAS传输") {
         transNum = sendNo;
-        ui->readCAS->setText("开始传输");
+        ui->readCAS->setText("开始CAS传输");
     }
 }
