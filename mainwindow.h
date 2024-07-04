@@ -12,6 +12,7 @@
 #include <QTime>
 #include "FrameSheet.h"
 #include <QFile>
+//#include "etherudp.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -73,11 +74,12 @@ private slots:
     void upreupdateJudge(unsigned char sendNo, feedbackData sampleData);        // 判断C-A通道是否需要更新u_arr
     void rttDelayUpdate(unsigned char sendNo, feedbackData sampleData);         // RTT更新
     void updateRealTimeStatus(unsigned char sendNo, CASREPORTFRAME statusData);
+    void updateSDRAMDataSlot(unsigned char sendNo, unsigned char currentSubPackNum, unsigned char totalPackNum, unsigned char writeNum, SUBPACK* array);
+    void readyToSDRAMTransSlot(unsigned char sendNo);
 
     //以太网报文更新数据
     void UpdateFeedbackSpeed1rpm(speedUpdateFormat curSpeedTime);
     void UpdateFeedbackSpeed2rpm(speedUpdateFormat curSpeedTime);
-
     void on_pushButton_5_clicked();
     void on_synStart_clicked();
     void on_speedGiven_clicked();
@@ -85,15 +87,10 @@ private slots:
     void on_PosiLoopInit_clicked();
     void on_StorePMSM2_clicked();
     void on_StorePMSM1_clicked();
-
     void on_readCAS_clicked();
-
     void on_PMSM1workModeSetup_clicked();
     void on_PMSM2workModeSetup_clicked();
-
-
     void on_PosiLoopSyncInit_clicked();
-
     void on_PosiLoopInit_2_clicked();
 
 private:

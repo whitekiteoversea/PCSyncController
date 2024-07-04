@@ -15,6 +15,7 @@ int main(int argc, char *argv[])
     qRegisterMetaType<speedUpdateFormat>("speedUpdateFormat");
     qRegisterMetaType<feedbackData>("feedbackData");
     qRegisterMetaType<CASREPORTFRAME>("CASREPORTFRAME");
+    qRegisterMetaType<CASREPORTSDRAMPACK>("CASREPORTSDRAMPACK");
 
     MainWindow w;
     w.setWindowTitle("龙门负载控制子系统上位机");

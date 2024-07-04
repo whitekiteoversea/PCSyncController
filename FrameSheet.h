@@ -142,6 +142,7 @@ typedef struct {
     uint32_t ENum;           // Ethernet帧号
     uint32_t ELen;           // Ethernet长度 Byte
     uint16_t EType;           // 报文类型
+    uint16_t subType;        // 子类型
     uint8_t CASNodeID;       // 数据来源
     uint8_t curWorkMode;     // 当前工作模式
     uint16_t statusWord;     // 状态字
@@ -153,6 +154,29 @@ typedef struct {
 } CASREPORTFRAME;
 Q_DECLARE_METATYPE(CASREPORTFRAME);
 
+typedef struct {
+    uint32_t g_time_ms;        //Ethernet帧头
+    uint32_t l_time_ms;           //Ethernet帧号
+    uint32_t posi_um;           //Ethernet长度 Byte
+} SUBPACK;
+
+#define  SUBPACKNUM    (100)
+#define RESNUM (800000)
+
+typedef struct {
+    uint32_t EHeader;        //Ethernet帧头
+    uint32_t ENum;           //Ethernet帧号
+    uint32_t ELen;           //Ethernet长度 Byte
+    uint8_t EType;           //报文类型
+    uint8_t subType;         // 子报文类型 0：请求告知 1:传输数据
+    uint8_t CASNode;         // 上报CAS节点
+    uint8_t SubPackNum;
+    uint8_t totalSubPackNum;
+    SUBPACK sdramSubPack[SUBPACKNUM]; // 单次上传100包
+    uint32_t FrameTailer;
+} CASREPORTSDRAMPACK;
+Q_DECLARE_METATYPE(CASREPORTSDRAMPACK);
+
 // SDRAM数据记录格式
 typedef struct {
     uint32_t local_time_ms;
@@ -161,14 +185,12 @@ typedef struct {
 
 #define MAXLOADPACKNUM  (150)
 
-// ETYPE = 0x
-
 typedef struct {
     uint32_t EHeader;        // Ethernet帧头
     uint32_t ENum;           // Ethernet帧号
     uint32_t ELen;           // Ethernet长度 Byte
     uint32_t EType;          // 数据包类型
-    uint32_t ReportStep;     // 当前上报阶段
+    uint32_t ReportStep;     // 当前上报阶段/子报文类型
     uint32_t ReportCASID;    // 上报节点
     uint32_t TotalPackNum;   // 总分包数
     uint32_t CurPackNum;     // 当前分包号
@@ -228,5 +250,8 @@ typedef struct {
 uint16_t WordCombine(uint8_t byte1, uint8_t byte2);
 
 extern volatile unsigned char curAlgoMode;
+extern SUBPACK frameSubpackArray[SUBPACKNUM];
+
+extern SUBPACK onceRecvArray[RESNUM];
 
 #endif // FRAMESHEET_H

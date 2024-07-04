@@ -14,7 +14,7 @@
 #include <QVariant>
 #include <complex>
 #include "pid.h"
-#include "cccControl.h"
+#include "posiAlgo.h"
 #include <cmath>
 
 
@@ -27,6 +27,10 @@
 
 // 数据存储相关
 #define maxStorageLen 12000
+
+SUBPACK onceRecvArray[RESNUM];
+unsigned int recordCnt = 0; // 单次总记录号
+unsigned char transNum = 0;
 
 // 帧号相关
 #define initFrameNum_TimeSync 0
@@ -41,7 +45,6 @@
 
 // 同步控制相关
 volatile unsigned char posiSyncModeEnabled = 0;
-
 
 //可用串口列表
 QStringList *availbleSerialPort;
@@ -173,7 +176,12 @@ MainWindow::MainWindow(QWidget *parent)
             this, SLOT(rttDelayUpdate(unsigned char, feedbackData)), Qt::AutoConnection);
     //电机状态数据
     connect(localEthRecvTask, SIGNAL(updateStatus(unsigned char, CASREPORTFRAME)),
-            this, SLOT(updateRealTimeStatus(unsigned char, CASREPORTFRAME)),Qt::AutoConnection);
+            this, SLOT(updateRealTimeStatus(unsigned char, CASREPORTFRAME)), Qt::AutoConnection);
+    //SDRAM存储数据
+    connect(localEthRecvTask, SIGNAL(updateSDRAMData(unsigned char, unsigned char, unsigned char, unsigned char, SUBPACK*)),
+            this, SLOT(updateSDRAMDataSlot(unsigned char, unsigned char, unsigned char, unsigned char, SUBPACK*)), Qt::AutoConnection);
+    //CAS回复准备好获取
+    connect(localEthRecvTask, SIGNAL(readyToSDRAMTrans(unsigned char)), this, SLOT(readyToSDRAMTransSlot(unsigned char)), Qt::AutoConnection);
 
 #ifdef SERIAL_DEBUG_ENABLE
     //新建串口接收对象
@@ -1342,19 +1350,6 @@ void MainWindow::on_StorePMSM2_clicked()
     file.close();
 }
 
-/* 交叉耦合同步控制 */
-uint8_t crossCouplingSync_Init(SYNCON *cccStruct)
-{
-   uint8_t duss_result = 0;
-
-
-
-
-
-
-   return duss_result;
-}
-
 // 交叉耦合同步更新
 uint8_t crossCouplingSync_Update()
 {
@@ -1369,7 +1364,7 @@ uint8_t crossCouplingSync_Update()
 }
 
 // 0x0A 发送大量数据读取请求 告知CAS停止获取新数据 需要CAS处于静止时生效
-// data[4]为子类型 01为请求 02为传输 03为结束
+// data[4]为子类型 01为请求 02为传输
 void MainWindow::on_readCAS_clicked()
 {
    CANFrame_STD canpack;
@@ -1385,7 +1380,13 @@ void MainWindow::on_readCAS_clicked()
 
    if (ui->readCAS->text() == "请求CAS传输") {
         if (curAlgoMode == 0) {
-            canpack.CANData[4] = 0x01;  // 告知请求
+            canpack.CANData[4] = 0x00;  // 告知请求
+
+            if (ui->checkBox->isChecked() && ui->checkBox_2->isChecked()) {
+                QMessageBox::critical(0, "警告！", "只能同时启动对一个CAS节点的数据读取！.",QMessageBox::Cancel);
+                return;
+            }
+
             if (ui->checkBox->isChecked()) {
                 canpack.CANID.STDCANID.NodeGroupID = 1;
                 packetSend(0x01, 0x0A, ((uint8_t *)&canpack));
@@ -1398,13 +1399,10 @@ void MainWindow::on_readCAS_clicked()
         }
         ui->CASUploadStatus->setText("");
    } else if (ui->readCAS->text() == "开始CAS传输") {
-
-   } else if (ui->readCAS->text() == "结束CAS传输") {
-
-   } else {
-        if (ui->CASUploadStatus->text() == "空闲中") {
-            ui->readCAS->setText("请求CAS传输");
-        }
+        canpack.CANID.STDCANID.NodeGroupID = 1;
+        canpack.CANData[4] = 0x01;
+        packetSend(transNum, 0x0A, ((uint8_t *)&canpack));
+        ui->readCAS->setText("等待CAS传输完成");
    }
 }
 
@@ -1495,3 +1493,57 @@ void MainWindow::on_PosiLoopInit_2_clicked()
 
 }
 
+void MainWindow::updateSDRAMDataSlot(unsigned char sendNo, unsigned char currentSubPackNum, unsigned char totalPackNum, unsigned char writeNum, SUBPACK* array)
+{
+    static unsigned short totalNum = 0;
+    unsigned char cnt = 0;
+
+    if (sendNo == 0x01) {
+        if (currentSubPackNum == totalPackNum) {
+            qDebug() << "All Has Down!\n";
+            totalNum += totalPackNum * SUBPACKNUM + writeNum; // 总写入项数量
+            // 调用写入文件函数
+
+            totalNum = 0;
+        } else if(currentSubPackNum < totalPackNum) {
+            while (cnt <= writeNum) {
+                onceRecvArray[recordCnt].g_time_ms = array[cnt].g_time_ms;
+                onceRecvArray[recordCnt].l_time_ms = array[cnt].l_time_ms;
+                onceRecvArray[recordCnt].posi_um = array[cnt].posi_um;
+                recordCnt++;
+                cnt++;
+            }
+        }
+    } else if (sendNo == 0x02) {
+        if (currentSubPackNum == totalPackNum) {
+            qDebug() << "All Has Down!\n";
+            totalNum += totalPackNum * SUBPACKNUM + writeNum; // 总写入项数量
+            // 调用写入文件函数
+
+            if (ui->readCAS->text() == "等待CAS传输完成") {
+                ui->readCAS->setText("请求CAS传输");
+            }
+
+            totalNum = 0;
+            recordCnt = 0;
+
+        } else if(currentSubPackNum < totalPackNum) {
+            while (cnt <= writeNum) {
+                onceRecvArray[recordCnt].g_time_ms = array[cnt].g_time_ms;
+                onceRecvArray[recordCnt].l_time_ms = array[cnt].l_time_ms;
+                onceRecvArray[recordCnt].posi_um = array[cnt].posi_um;
+
+                recordCnt++;
+                cnt++;
+            }
+        }
+    }
+}
+
+void MainWindow::readyToSDRAMTransSlot(unsigned char sendNo)
+{
+    if (ui->readCAS->text() == "请求CAS传输") {
+        transNum = sendNo;
+        ui->readCAS->setText("开始传输");
+    }
+}

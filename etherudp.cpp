@@ -3,13 +3,12 @@
 #include <QDebug>
 #include <QHostAddress>
 #include <QString>
-#include "FrameSheet.h"
 #include <QNetworkProxy>
 #include <QFileDialog>
 #include <QVariant>
 
-#define RECVLEN  (600)  // 接收区长度
-#define SENDLEN  (600)  // 接收区长度
+#define RECVLEN  (1300)  // 接收区长度
+#define SENDLEN  (1300)  // 发送区长度
 
 // ETH-CAS Mode
 QString bindIP = "192.168.20.33"; //上位机接收IP
@@ -19,6 +18,8 @@ uint8_t etherRecvBuf[RECVLEN] = {0}; //以太网接收缓冲区
 uint8_t curSndCANMsgCnt = 0; //记录本次发送的CAN消息条数
 uint8_t etherudpSndBuf[SENDLEN] = {0};  //以太网报文发送缓冲区
 uint32_t recvTimeSyn[2] = {0};
+
+SUBPACK frameSubpackArray[SUBPACKNUM];
 
 //动态分配接收大量数据
 QList<unsigned int> timeStamplist_1;
@@ -62,6 +63,7 @@ void Etherudp::read_data()
     EthControlFrame recvFeedbackPack;
 
     CASREPORTFRAME recvCASFrame;
+    CASREPORTSDRAMPACK recvCASSDRAMFrame; //SDRAM上报数据
     uint8_t cnt =0;
 
     /*接收以太网数据包,注意处理多字节数据大小端问题*/
@@ -89,6 +91,24 @@ void Etherudp::read_data()
                 break;
 
                 case CANDriverInfoAcquire:  //SDRAM数据上传
+                if (recvCASFrame.subType == 0x00) { // 请求
+                    emit readyToSDRAMTrans(recvCASFrame.CASNodeID);
+                } else if (recvCASFrame.subType == 0x02) { // 传输
+                    memset(&recvCASSDRAMFrame, 0, sizeof(recvCASSDRAMFrame));
+                    memcpy(&recvCASSDRAMFrame, etherRecvBuf, sizeof(recvCASSDRAMFrame));
+
+                    for (cnt=0;cnt<recvCASSDRAMFrame.ENum;cnt++) {
+                        frameSubpackArray[cnt].g_time_ms = recvCASSDRAMFrame.sdramSubPack[cnt].g_time_ms;
+                        frameSubpackArray[cnt].l_time_ms = recvCASSDRAMFrame.sdramSubPack[cnt].l_time_ms;
+                        frameSubpackArray[cnt].posi_um = recvCASSDRAMFrame.sdramSubPack[cnt].posi_um;
+                    }
+
+                    emit updateSDRAMData(recvCASFrame.CASNodeID, \
+                                         recvCASSDRAMFrame.SubPackNum, \
+                                         recvCASSDRAMFrame.totalSubPackNum, \
+                                         recvCASFrame.ENum, \
+                                         frameSubpackArray);
+                }
 
                 break;
 

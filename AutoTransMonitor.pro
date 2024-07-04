@@ -20,16 +20,17 @@ SOURCES += \
     main.cpp \
     mainwindow.cpp \
     pid.cpp \
+    posiAlgo.cpp \
     qcustomplot.cpp \
     timemonitor.cpp \
     wirelessserialport.cpp
 
 HEADERS += \
     FrameSheet.h \
-    cccControl.h \
     etherudp.h \
     mainwindow.h \
     pid.h \
+    posiAlgo.h \
     qcustomplot.h \
     timemonitor.h \
     wirelessserialport.h
