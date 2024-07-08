@@ -170,8 +170,8 @@ typedef struct {
     uint16_t EType;           //报文类型
     uint16_t subType;         // 子报文类型 0：请求告知 1:传输数据
     uint8_t CASNode;         // 上报CAS节点
-    uint8_t SubPackNum;
-    uint8_t totalSubPackNum;
+    uint32_t SubPackNum;
+    uint32_t totalSubPackNum;
     SUBPACK sdramSubPack[SUBPACKNUM]; // 单次上传100包
     uint32_t FrameTailer;
 } CASREPORTSDRAMPACK;

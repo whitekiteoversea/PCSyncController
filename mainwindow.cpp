@@ -178,8 +178,8 @@ MainWindow::MainWindow(QWidget *parent)
     connect(localEthRecvTask, SIGNAL(updateStatus(unsigned char, CASREPORTFRAME)),
             this, SLOT(updateRealTimeStatus(unsigned char, CASREPORTFRAME)), Qt::AutoConnection);
     //SDRAM存储数据
-    connect(localEthRecvTask, SIGNAL(updateSDRAMData(unsigned char, unsigned char, unsigned char, unsigned char, SUBPACK*)),
-            this, SLOT(updateSDRAMDataSlot(unsigned char, unsigned char, unsigned char, unsigned char, SUBPACK*)), Qt::AutoConnection);
+    connect(localEthRecvTask, SIGNAL(updateSDRAMData(unsigned char, unsigned int, unsigned int, unsigned int, SUBPACK*)),
+            this, SLOT(updateSDRAMDataSlot(unsigned char, unsigned int, unsigned int, unsigned int, SUBPACK*)), Qt::AutoConnection);
     //CAS回复准备好获取
     connect(localEthRecvTask, SIGNAL(readyToSDRAMTrans(unsigned char)), this, SLOT(readyToSDRAMTransSlot(unsigned char)), Qt::AutoConnection);
 
@@ -1627,10 +1627,10 @@ void MainWindow::on_PosiLoopInit_2_clicked()
 
 }
 
-void MainWindow::updateSDRAMDataSlot(unsigned char sendNo, unsigned char currentSubPackNum, unsigned char totalPackNum, unsigned char writeNum, SUBPACK* array)
+void MainWindow::updateSDRAMDataSlot(unsigned char sendNo, unsigned int currentSubPackNum, unsigned int totalPackNum, unsigned int writeNum, SUBPACK* array)
 {
-    static unsigned short totalNum = 0;
-    unsigned char cnt = 0;
+    static unsigned int totalNum = 0;
+    unsigned int cnt = 0;
 
     if (sendNo == 0x01) {
         if (currentSubPackNum == totalPackNum) {

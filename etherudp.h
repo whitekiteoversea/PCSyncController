@@ -28,7 +28,7 @@ signals:
     void updateSystemModel(unsigned char sendNo, feedbackData sampleData); //接收到最新的x_estimate，通知更新预测控制序列u_arr
     void updateStatus(unsigned char sendNo, CASREPORTFRAME statusData);
     void updateRTTDelay(unsigned char sendNo, feedbackData sampleData); //更新同步RTT时延
-    void updateSDRAMData(unsigned char sendNo, unsigned char currentSubPackNum, unsigned char totalPackNum, unsigned char writeNum, SUBPACK* array); //更新SDRAM数据
+    void updateSDRAMData(unsigned char sendNo, unsigned int currentSubPackNum, unsigned int totalPackNum, unsigned int writeNum, SUBPACK* array); //更新SDRAM数据
     void readyToSDRAMTrans(unsigned char sendNo);
 public slots:
     void read_data(); //解析通信内容

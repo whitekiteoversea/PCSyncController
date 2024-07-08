@@ -79,7 +79,7 @@ private slots:
     void upreupdateJudge(unsigned char sendNo, feedbackData sampleData);        // 判断C-A通道是否需要更新u_arr
     void rttDelayUpdate(unsigned char sendNo, feedbackData sampleData);         // RTT更新
     void updateRealTimeStatus(unsigned char sendNo, CASREPORTFRAME statusData);
-    void updateSDRAMDataSlot(unsigned char sendNo, unsigned char currentSubPackNum, unsigned char totalPackNum, unsigned char writeNum, SUBPACK* array);
+    void updateSDRAMDataSlot(unsigned char sendNo, unsigned int currentSubPackNum, unsigned int totalPackNum, unsigned int writeNum, SUBPACK* array);
     void readyToSDRAMTransSlot(unsigned char sendNo);
 
     //以太网报文更新数据
