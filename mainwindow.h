@@ -12,7 +12,7 @@
 #include <QTime>
 #include "FrameSheet.h"
 #include <QFile>
-//#include "etherudp.h"
+#include "datatracer.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -49,6 +49,8 @@ public:
     // 文件存储
     char* GetCuurentFilePath();
 
+    void FindSelectedPoint(QCPGraph *graph, QPoint select_point, double &key, double &value);
+
 signals:
     void timerCTRSend(unsigned char presetTimerStatus); //发送定时器状态变更命令
     void ethernetCloseCTRSend();                        //结束以太网接收线程
@@ -60,6 +62,9 @@ private slots:
     void on_timerSet_clicked();              //定时器开启/关闭
     void pageMsgRefresh();                   //界面信息更新
     void realtimeDataSlot();                 //定时器调用，速度显示刷新
+    // 数据标签
+    void CustomPlotMousePress(QMouseEvent* event);
+    void CustomPlotSelectionChanged();
 
     void on_synStop_clicked();               //同步停车
 #ifdef SERIAL_DEBUG_ENABLE
@@ -104,6 +109,9 @@ private:
     QAxObject *excel;
     QTime currentTime;
     QFile *pFile;
+
+    QPoint m_PressedPoint;
+    DataTracer *p_DataTracer;
 };
 
 //系统状态方程一步迭代

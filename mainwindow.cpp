@@ -203,6 +203,12 @@ MainWindow::MainWindow(QWidget *parent)
     plotParaSetup();
     connect(dataTimer, SIGNAL(timeout()), this, SLOT(realtimeDataSlot()),Qt::AutoConnection);  //定时刷新回调函数连接
 
+    // 设置鼠标跟踪数据浮标
+    ui->speedRecord->setInteractions(QCP::iRangeDrag | QCP::iSelectLegend | QCP::iRangeZoom  | QCP::iSelectPlottables | QCP::iSelectAxes);
+    connect(ui->speedRecord, SIGNAL(mousePress(QMouseEvent*)), this, SLOT(CustomPlotMousePress(QMouseEvent*)));
+    connect(ui->speedRecord, SIGNAL(selectionChangedByUser()), this, SLOT(CustomPlotSelectionChanged()));
+    this->p_DataTracer = new DataTracer(ui->speedRecord);
+
     //本地定时器运行线程
     timeMonitor *localTotalTimeThread = new timeMonitor();  //计时线程
     localTotalTimeThread->start(); //开启计时线程
@@ -250,6 +256,121 @@ MainWindow::~MainWindow()
 {
     delete ui;
 }
+
+void MainWindow::CustomPlotMousePress(QMouseEvent* event)
+{
+    // 鼠标右击查看全览
+    if (event->button() == Qt::RightButton) {
+        // 获取所有数据点的范围
+        // ui->speedRecord->xAxis->axisRect()
+        ui->speedRecord->graph(0)->rescaleAxes();
+        // 重新绘制图表
+        ui->speedRecord->replot();
+    } else if (event->button() == Qt::LeftButton) {
+        this->m_PressedPoint = event->pos();// 鼠标左击查看标签
+    }
+}
+
+void MainWindow::CustomPlotSelectionChanged(){
+    if (ui->speedRecord->xAxis->selectedParts().testFlag(QCPAxis::spAxis) || ui->speedRecord->xAxis->selectedParts().testFlag(QCPAxis::spTickLabels) || ui->speedRecord->xAxis->selectedParts().testFlag(QCPAxis::spAxisLabel))
+    {
+        ui->speedRecord->xAxis2->setSelectedParts(QCPAxis::spAxis | QCPAxis::spTickLabels | QCPAxis::spAxisLabel);
+        ui->speedRecord->xAxis->setSelectedParts(QCPAxis::spAxis | QCPAxis::spTickLabels | QCPAxis::spAxisLabel);
+    }
+    if (ui->speedRecord->yAxis->selectedParts().testFlag(QCPAxis::spAxis) || ui->speedRecord->yAxis->selectedParts().testFlag(QCPAxis::spTickLabels) || ui->speedRecord->yAxis->selectedParts().testFlag(QCPAxis::spAxisLabel))
+    {
+        ui->speedRecord->yAxis2->setSelectedParts(QCPAxis::spAxis | QCPAxis::spTickLabels | QCPAxis::spAxisLabel);
+        ui->speedRecord->yAxis->setSelectedParts(QCPAxis::spAxis | QCPAxis::spTickLabels | QCPAxis::spAxisLabel);
+    }
+
+    int graph_index = -1;
+    bool haveselected=false;
+    for (int i=0; i<ui->speedRecord->graphCount(); ++i)
+    {
+        QCPGraph *graph = ui->speedRecord->graph(i);
+        graph->setVisible(false);
+        QCPPlottableLegendItem *item = ui->speedRecord->legend->itemWithPlottable(graph);
+        if (item->selected() || graph->selected())
+        {
+            //仅显示当前被选中的曲线
+            graph_index = i;
+            haveselected=true;
+            graph->setVisible(true);
+            item->setSelected(true);
+            graph->setSelection(QCPDataSelection(graph->data()->dataRange()));
+        }
+    }
+
+    if(!haveselected){
+        this->p_DataTracer->setVisible(false);
+        for (int i=0; i<ui->speedRecord->graphCount(); ++i){
+            ui->speedRecord->graph(i)->setVisible(true);
+        }
+    }else{
+        this->p_DataTracer->setVisible(true);
+        double key, value;
+        FindSelectedPoint(ui->speedRecord->graph(graph_index), this->m_PressedPoint, key, value);
+        QDateTime time = QCPAxisTickerDateTime::keyToDateTime(key);
+        this->p_DataTracer->setText(time.toString("Time:hh:mm.ss"), QString("Depth:%1m").arg(value, 0,'f',2));
+        this->p_DataTracer->updatePosition(ui->speedRecord->graph(graph_index), key, value);
+    }
+}
+
+//查找距离鼠标点击位置最近的曲线上采样点的位置
+void MainWindow::FindSelectedPoint(QCPGraph *graph, QPoint select_point, double &key, double &value)
+{
+    double temp_key, temp_value;
+    graph->pixelsToCoords(select_point, temp_key, temp_value);
+    QSharedPointer<QCPGraphDataContainer> tmpContainer;
+    tmpContainer = graph->data();
+    int low=0, high=tmpContainer->size();
+
+    if(tmpContainer->size()<3){
+        if(tmpContainer->size() == 1){
+            key = tmpContainer->constBegin()->mainKey();
+            value = tmpContainer->constBegin()->mainValue();
+            return;
+        }else if(tmpContainer->size() == 2){
+            double diff1 = qAbs(tmpContainer->at(1)->mainKey()-temp_key);
+            double diff2 = qAbs(tmpContainer->at(0)->mainKey()-temp_key);
+            if(diff1 <= diff2){
+                key =  tmpContainer->at(1)->mainKey();
+                value = tmpContainer->at(1)->mainValue();
+            }else{
+                key = tmpContainer->at(0)->mainKey();
+                value = tmpContainer->at(0)->mainValue();
+            }
+            return;
+        }
+    }
+
+    while (high>low) {
+        int mid = (low+high)>>1;
+        if(temp_key == (tmpContainer->constBegin()+mid)->mainKey()){
+            key = temp_key;
+            value = (tmpContainer->constBegin()+mid)->mainValue();
+            break;
+        }else if(temp_key > (tmpContainer->constBegin()+mid)->mainKey()){
+            low = mid;
+        }else if(temp_key < (tmpContainer->constBegin()+mid)->mainKey()){
+            high = mid;
+        }
+        if(high - low <= 1){
+            double diff1 = qAbs((tmpContainer->constBegin()+high)->mainKey()-temp_key);
+            double diff2 = qAbs((tmpContainer->constBegin()+low)->mainKey()-temp_key);
+            if(diff1 <= diff2){
+                key =  (tmpContainer->constBegin()+high)->mainKey();
+                value = (tmpContainer->constBegin()+high)->mainValue();
+            }else{
+                key = (tmpContainer->constBegin()+low)->mainKey();
+                value = (tmpContainer->constBegin()+low)->mainValue();
+            }
+            break;
+        }
+    }
+}
+
+
 
 void MainWindow::initStyle()
 {
@@ -485,6 +606,7 @@ void MainWindow::plotParaSetup()
     QSharedPointer<QCPAxisTickerTime> timeTicker(new QCPAxisTickerTime);
     timeTicker->setTimeFormat("%m:%s:%z");                    //时间格式
     ui->speedRecord->xAxis->setTicker(timeTicker);            //x轴跟随本地时间
+
     ui->speedRecord->axisRect()->setupFullAxesBox();
     ui->speedRecord->yAxis->setRange(-4000, 5100);            //y轴给定上下限
 
@@ -492,7 +614,7 @@ void MainWindow::plotParaSetup()
     ui->speedRecord->plotLayout()->insertRow(0);
     m_title = new QCPTextElement(ui->speedRecord,"反馈位置曲线图");
     ui->speedRecord->plotLayout()->addElement(0,0,m_title);
-    ui->speedRecord->yAxis->setLabel("Posi-mm/Torque-0.001N.m");
+    ui->speedRecord->yAxis->setLabel("Posi-0.1mm/Torque-0.1N.m");
     ui->speedRecord->xAxis->setLabel("Time-ms");
 
     //允许鼠标滚轮缩放和显示范围拖拽
@@ -541,10 +663,19 @@ void MainWindow::realtimeDataSlot()
 
     //最大帧数 50帧
     if (key-lastPointKey > 0.02) {
-        ui->speedRecord->graph(0)->addData(key, (laFData_CH[0].feedbackPosium - LEFT_START_POSI)/1000);
-        ui->speedRecord->graph(1)->addData(key, (laFData_CH[1].feedbackPosium - RIGHT_START_POSI)/1000);
-        ui->speedRecord->graph(2)->addData(key, (laFData_CH[2].motorRealTimeTorqueNM*MOTORTORQUE));
-        ui->speedRecord->graph(3)->addData(key, (laFData_CH[3].motorRealTimeTorqueNM*MOTORTORQUE));
+        if (laFData_CH[0].feedbackPosium <= LEFT_START_POSI) {
+            ui->speedRecord->graph(0)->addData(key, 0);
+        } else {
+            ui->speedRecord->graph(0)->addData(key, (laFData_CH[0].feedbackPosium - LEFT_START_POSI)/100);
+        }
+        if (laFData_CH[1].feedbackPosium <= RIGHT_START_POSI) {
+            ui->speedRecord->graph(1)->addData(key, 0);
+        } else {
+            ui->speedRecord->graph(1)->addData(key, (laFData_CH[1].feedbackPosium - RIGHT_START_POSI)/100);
+        }
+
+        ui->speedRecord->graph(2)->addData(key, (laFData_CH[0].motorRealTimeTorqueNM*MOTORTORQUE/100));
+        ui->speedRecord->graph(3)->addData(key, (laFData_CH[1].motorRealTimeTorqueNM*MOTORTORQUE/100));
 
         // ReScale
         ui->speedRecord->graph(0)->rescaleValueAxis(true); // rescale value (vertical) axis to fit the current data:
