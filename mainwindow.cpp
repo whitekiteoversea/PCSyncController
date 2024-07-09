@@ -401,7 +401,7 @@ void MainWindow::sendTimeSyncSig()
 
         if (ui->checkBox->isChecked()) {
             canpack.CANID.STDCANID.NodeGroupID = 0x01;  // 左电机
-            packetSend(0x01, CANTimeSyncCmd, (unsigned char *)(&canpack)); //速度给定
+            packetSend(0x01, CANTimeSyncCmd, (unsigned char *)(&canpack));
         }
 
         if (ui->checkBox_2->isChecked()){
@@ -425,13 +425,17 @@ void MainWindow::sendTimeSyncSig()
     }
 }
 
-// 周期获取位置传感器反馈值 > 20ms
+// 周期获取位置传感器反馈值 5ms (CAS实际0.8ms左右)
 void MainWindow::sendRequestSig()
 {
     CANFrame_STD canpack;
+    int ii = 0;
 
     //获取最新时间
     currentTime =QTime::currentTime();
+    for (ii =0; ii<4; ii++) {
+        canpack.CANData[ii] = (refreshCnt >> 8*(3-ii)) & 0xFF;
+    }
 
     if (curAlgoMode == 0) {
         //填写报文内容
@@ -523,13 +527,13 @@ void MainWindow::onTimeout(unsigned int RecvCurTimeStamp_Ms)
     }
 
     // 时间同步报文下发 1s
-    if (timeSyncPacketCnt >= 1000) {
-        timeSyncPacketCnt = 0;
-        sendTimeSyncSig();
-    }
+//    if (timeSyncPacketCnt >= 1000) {
+//        timeSyncPacketCnt = 0;
+//        sendTimeSyncSig();
+//    }
 
-    // 周期查询报文下发时间 20ms
-    if (requestPacketCnt >= 20) {
+    // 周期查询报文下发时间 5ms (CAS模式下与时间同步报文合并)
+    if (requestPacketCnt >= 5) {
         requestPacketCnt = 0;
         sendRequestSig();
     }
@@ -1124,21 +1128,20 @@ void MainWindow::updateRealTimeStatus(unsigned char sendNo, CASREPORTFRAME statu
         ui->PMSM1STA->setText("0x"+QString::number(statusData.statusWord, 16));  //状态字
         ui->PMSM1Posi->setText(QString::number(statusData.motorPosiUM, 10));
         laFData_CH[sendNo-1].feedbackPosium = statusData.motorPosiUM;
+        laFData_CH[sendNo-1].cas_gTimeMS = statusData.CAS_gTime_MS;
         laFData_CH[sendNo-1].sampleTimeStamp = statusData.localTimeMS;
         laFData_CH[sendNo-1].motorRealTimeTorqueNM = statusData.motorRealTimeTorqueNM;
         ui->torque1->setText(QString::number(statusData.motorRealTimeTorqueNM, 10));
         ui->PMSM1OM->setText(QString::number(statusData.curWorkMode, 10));
-
     } else if (sendNo == 2) {
         ui->PMSM2STA->setText("0x"+QString::number(statusData.statusWord, 16));  //状态字
         ui->PMSM2Posi->setText(QString::number(statusData.motorPosiUM, 10));
-
         laFData_CH[sendNo-1].feedbackPosium = statusData.motorPosiUM;
         laFData_CH[sendNo-1].sampleTimeStamp = statusData.localTimeMS;
+        laFData_CH[sendNo-1].cas_gTimeMS = statusData.CAS_gTime_MS;
         laFData_CH[sendNo-1].motorRealTimeTorqueNM = statusData.motorRealTimeTorqueNM;
         ui->torque2->setText(QString::number(statusData.motorRealTimeTorqueNM, 10));
         ui->PMSM2OM->setText(QString::number(statusData.curWorkMode, 10));
-
     } else {
         qDebug() << "Out of Motor ID Range! \n";
     }
@@ -1266,18 +1269,13 @@ void MainWindow::on_speedGiven_clicked()
 //0x1E 开启时钟同步报文分发
 void MainWindow::on_pushButton_10_clicked()
 {
-    if(ui->pushButton_10->text() == "时钟同步启动")
-    {
+    if(ui->pushButton_10->text() == "时钟同步启动") {
         timeSynFlag = 1;
         ui->pushButton_10->setText("时钟同步停止");
-    }
-    else if(ui->pushButton_10->text() == "时钟同步停止")
-    {
+    } else if(ui->pushButton_10->text() == "时钟同步停止") {
         timeSynFlag = 0;
          ui->pushButton_10->setText("时钟同步启动");
-    }
-    else
-    {
+    } else {
         QMessageBox::critical(0, "警告！", "时钟同步状态异常！",QMessageBox::Cancel);
         timeSynFlag = 0;
     }

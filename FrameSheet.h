@@ -146,6 +146,7 @@ typedef struct {
     uint8_t CASNodeID;       // 数据来源
     uint8_t curWorkMode;     // 当前工作模式
     uint16_t statusWord;     // 状态字
+    uint32_t CAS_gTime_MS;   // CAS端记录的数据记录时刻时间
     uint32_t localTimeMS;    // 上报时间
     uint32_t motorPosiUM;    // 当前绝对位置
     short motorRealTimeTorqueNM; //实时转矩
@@ -233,6 +234,7 @@ Q_DECLARE_METATYPE(speedUpdateFormat);
 typedef struct {
     uint8_t dataSource;
     uint16_t frameNum;
+    uint32_t cas_gTimeMS;
     uint32_t sampleTimeStamp;
     int32_t feedbackPosium;
     short motorRealTimeTorqueNM;

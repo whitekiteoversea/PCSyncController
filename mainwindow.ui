@@ -278,6 +278,9 @@
           </item>
           <item>
            <widget class="QPushButton" name="pushButton_10">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
             <property name="text">
              <string>时钟同步启动</string>
             </property>
