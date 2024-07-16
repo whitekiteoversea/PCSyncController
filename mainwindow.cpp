@@ -12,9 +12,11 @@
 #include <math.h>
 #include <complex>
 #include <QVariant>
-#include <complex>
+
 #include "pid.h"
+#include "cccAlgo.h"
 #include "posiAlgo.h"
+#include "smcAlgo.h"
 #include <cmath>
 
 
@@ -24,6 +26,8 @@
 // 功能开关
 #define TimeSyncEnable   (1)    //报文时钟同步默认开启
 #define SpeedSyncMode    (0)    //测试用，三通道速度给定一致
+
+#define CCC_AOGO_ENABLE  (1)    // 同步算法使用交叉耦合同步控制
 
 // 数据存储相关
 #define maxStorageLen 12000
@@ -42,7 +46,6 @@ unsigned char transNum = 0;
 #define initFrameNum_SpeedPre 40000
 #define maxFrameNum_SpeedPre 59999
 
-
 // 同步控制相关
 volatile unsigned char posiSyncModeEnabled = 0;
 
@@ -55,7 +58,6 @@ volatile unsigned char curAlgoMode = 0;
 //工作模式
 unsigned char workMode= 0;  // 0:默认模式;1:位置曲线控制;2:同步控制
 short *refPosiArray = NULL; //获取
-
 int posiRef = 0;            //位置PID控制给定
 
 uint32_t timeStamp[maxStorageLen];      //存放对应帧的utc时间
@@ -69,7 +71,6 @@ PIDController pid;
 
 //通道数据接收
 uint16_t recPosiCnt_CH[3] = {0};
-
 feedbackData laFData_CH[3];  // 绘图使用电机反馈数据
 
 uint32_t g_RecvTimeMS_CH1[maxStorageLen];   //存储反馈位置数据时间
@@ -115,6 +116,9 @@ int dst_Port = 8001;
 // 全局计时 1ms
 volatile unsigned int globalSynTime_ms = 0;
 volatile int requestPacketFlag = 0;   //发送标志
+
+// 同步任务基本参数记录
+POSISYNCTASK posiTask;
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -535,13 +539,27 @@ void MainWindow::onTimeout(unsigned int RecvCurTimeStamp_Ms)
     // 周期查询报文下发时间 5ms (CAS模式下与时间同步报文合并)
     if (requestPacketCnt >= 5) {
         requestPacketCnt = 0;
-        sendRequestSig();
+        sendRequestSig(); //位置反馈获取
+
+        // 位置控制输出更新
+        if (posiSyncModeEnabled == 1) {
+            posiSyncAlgoTask();
+            speedGivenUpdate(1, 1);
+            speedGivenUpdate(1, 2);
+        }
+        if (posiSyncModeEnabled == 2) {
+            singleMotorPosiTask(1, ui->refPosiSig->text().toInt());
+            speedGivenUpdate(0, 1);
+        }
+        if (posiSyncModeEnabled == 3) {
+            singleMotorPosiTask(2, ui->refPosiSig->text().toInt());
+            speedGivenUpdate(0, 2);
+        }
     }
 
-    // 需要确定控制频率
-    if (posiSyncModeEnabled == 1) {
-        posiSyncAlgoTask();
-    }
+    // 位置环 控制
+    // 同步控制启动
+
 
     timeSyncPacketCnt++;
     requestPacketCnt++;
@@ -1125,35 +1143,41 @@ void MainWindow::updateRealTimeStatus(unsigned char sendNo, CASREPORTFRAME statu
     }
 
     if (sendNo == 1) {
-        ui->PMSM1STA->setText("0x"+QString::number(statusData.statusWord, 16));  //状态字
-        ui->PMSM1Posi->setText(QString::number(statusData.motorPosiUM, 10));
-        laFData_CH[sendNo-1].feedbackPosium = statusData.motorPosiUM;
-        laFData_CH[sendNo-1].cas_gTimeMS = statusData.CAS_gTime_MS;
-        laFData_CH[sendNo-1].sampleTimeStamp = statusData.localTimeMS;
-        laFData_CH[sendNo-1].motorRealTimeTorqueNM = statusData.motorRealTimeTorqueNM;
-        ui->torque1->setText(QString::number(statusData.motorRealTimeTorqueNM, 10));
-        ui->PMSM1OM->setText(QString::number(statusData.curWorkMode, 10));
+        if ((statusData.motorPosiUM >= LEFT_START_POSI) && (statusData.motorPosiUM <= LEFT_END_POSI)) {
+            ui->PMSM1STA->setText("0x"+QString::number(statusData.statusWord, 16));  //状态字
+            ui->PMSM1Posi->setText(QString::number(statusData.motorPosiUM, 10));
+            laFData_CH[sendNo-1].feedbackPosium = statusData.motorPosiUM;
+            laFData_CH[sendNo-1].cas_gTimeMS = statusData.CAS_gTime_MS;
+            laFData_CH[sendNo-1].sampleTimeStamp = statusData.localTimeMS;
+            laFData_CH[sendNo-1].motorRealTimeTorqueNM = statusData.motorRealTimeTorqueNM;
+            ui->torque1->setText(QString::number(statusData.motorRealTimeTorqueNM, 10));
+            ui->PMSM1OM->setText(QString::number(statusData.curWorkMode, 10));
+        }
     } else if (sendNo == 2) {
-        ui->PMSM2STA->setText("0x"+QString::number(statusData.statusWord, 16));  //状态字
-        ui->PMSM2Posi->setText(QString::number(statusData.motorPosiUM, 10));
+        if ((statusData.motorPosiUM >= RIGHT_START_POSI) && (statusData.motorPosiUM <= RIGHT_END_POSI)) {
+            ui->PMSM2STA->setText("0x"+QString::number(statusData.statusWord, 16));  //状态字
+            ui->PMSM2Posi->setText(QString::number(statusData.motorPosiUM, 10));
+            laFData_CH[sendNo-1].feedbackPosium = statusData.motorPosiUM;
+            laFData_CH[sendNo-1].sampleTimeStamp = statusData.localTimeMS;
+            laFData_CH[sendNo-1].cas_gTimeMS = statusData.CAS_gTime_MS;
+            laFData_CH[sendNo-1].motorRealTimeTorqueNM = statusData.motorRealTimeTorqueNM;
+            ui->torque2->setText(QString::number(statusData.motorRealTimeTorqueNM, 10));
+            ui->PMSM2OM->setText(QString::number(statusData.curWorkMode, 10));
+        }
+    } else if (sendNo == 3) {
         laFData_CH[sendNo-1].feedbackPosium = statusData.motorPosiUM;
         laFData_CH[sendNo-1].sampleTimeStamp = statusData.localTimeMS;
         laFData_CH[sendNo-1].cas_gTimeMS = statusData.CAS_gTime_MS;
-        laFData_CH[sendNo-1].motorRealTimeTorqueNM = statusData.motorRealTimeTorqueNM;
-        ui->torque2->setText(QString::number(statusData.motorRealTimeTorqueNM, 10));
-        ui->PMSM2OM->setText(QString::number(statusData.curWorkMode, 10));
-    } else {
+    }else {
         qDebug() << "Out of Motor ID Range! \n";
     }
 
     // 更新同步误差
     if (ui->checkBox->isChecked() && ui->checkBox_2->isChecked()) {
-        syncErrorUM = laFData_CH[0].feedbackPosium - LEFT_START_POSI - laFData_CH[1].feedbackPosium + RIGHT_START_POSI;
+        syncErrorUM = laFData_CH[0].feedbackPosium - LEFT_START_POSI - laFData_CH[1].feedbackPosium + RIGHT_START_POSI + SETUP_HIGH_COMPENSATION_US;
         ui->posiSyncError->setText(QString::number(syncErrorUM, 'f', 6));
         ui->rotateAngle->setText(QString::number( (atan((double)syncErrorUM/ZAXIS_DISTANCE)),'f',6));
     }
-
-
 }
 
 //滑窗平均速度计算 4个周期
@@ -1264,6 +1288,44 @@ void MainWindow::on_speedGiven_clicked()
            g_speedGivenNum_CH[0] = initFrameNum_SpeedGiven;
         }
     }
+}
+
+//提供给同步算法进行发送
+void MainWindow::speedGivenUpdate(unsigned sendType, unsigned char sendNo)
+{
+    CANFrame_STD canpack;
+    if (curAlgoMode == 0){
+        canpack.CANID.STDCANID.MasterOrSlave = 1; //Master下发
+        canpack.CANID.STDCANID.CTRCode = 0x03;
+        canpack.CANID.STDCANID.Reserve = 0;
+
+        if (sendType == 0) {
+            if (sendNo == 1) {
+                canpack.CANData[4] = ((short)(posiPIDA.out) >> 8) & 0xFF;
+                canpack.CANData[5] = ((short)(posiPIDA.out)) & 0xFF;
+            } else if (sendNo == 2) {
+                canpack.CANData[4] = ((short)(posiPIDB.out) >> 8) & 0xFF;
+                canpack.CANData[5] = ((short)(posiPIDB.out)) & 0xFF;
+            } else {
+                goto __end;
+            }
+        } else {
+            if (sendNo == 1) {
+                canpack.CANData[4] = ((short)(ccc_Control.controlSignalA) >> 8) & 0xFF;
+                canpack.CANData[5] = ((short)(ccc_Control.controlSignalA)) & 0xFF;
+            } else if (sendNo == 2) {
+                canpack.CANData[4] = ((short)(ccc_Control.controlSignalB) >> 8) & 0xFF;
+                canpack.CANData[5] = ((short)(ccc_Control.controlSignalB)) & 0xFF;
+            } else {
+                goto __end;
+            }
+        }
+        canpack.CANID.STDCANID.NodeGroupID = sendNo;  // 右电机
+        packetSend(sendNo, CANTargetCmd, (unsigned char *)(&canpack));
+    }
+
+__end:
+
 }
 
 //0x1E 开启时钟同步报文分发
@@ -1392,6 +1454,49 @@ char* MainWindow::GetCuurentFilePath(void)
     }
 }
 
+void num2constStr(unsigned int num, const char* str)
+{
+    QString qstr = QString::number(num);
+
+    // Convert QString to QByteArray
+    QByteArray byteArray = qstr.toUtf8(); // or qstr.toLatin1() if you prefer Latin1 encoding
+
+    // Get char* from QByteArray
+    str = byteArray.constData();
+}
+
+void MainWindow::sdramDataSave(unsigned char saveCASID)
+{
+    unsigned int cnt = 0;
+    //1.选择导出的csv文件保存路径
+    QString csvFile = QFileDialog::getExistingDirectory(this);
+    if (csvFile.isEmpty())
+        return;
+
+    //2.文件名采用CASID+系统时间戳生成唯一的文件
+    QDateTime current_date_time =QDateTime::currentDateTime();
+    QString current_date =current_date_time.toString("yyyy_MM_dd_hh_mm_ss");
+    csvFile += tr("/CAS%1_SDRAMFileSave_export_%2.csv").arg(saveCASID).arg(current_date);
+
+    //3.用QFile打开.csv文件 如果不存在则会自动新建一个新的文件
+    QFile file(csvFile);
+    if (file.exists()) {
+        //如果文件存在执行的操作，此处为空，因为文件不可能存在
+    }
+    file.open( QIODevice::ReadWrite | QIODevice::Text );
+    statusBar()->showMessage(tr("正在导出数据..."));
+    QTextStream out(&file);
+
+    //4.获取数据 创建表头
+    out<<tr("GlobalTimeMS,")<<tr("LocalTimeMS,")<<tr("realTimePosi_um,")<<tr("realTimeTorque_1000p,\n");//表头
+    for (cnt = 0; cnt<recordCnt; cnt++) {
+        out << onceRecvArray[cnt].g_time_ms << "," << onceRecvArray[cnt].l_time_ms << "," << onceRecvArray[cnt].posi_um << "\n";
+    }
+
+    //5.写完数据需要关闭文件
+    file.close();
+}
+
 // 参考速度信号曲线生成
 short* posiRefCal(unsigned int dstPosiIncre) {
     static short *speedRef = NULL;
@@ -1511,9 +1616,7 @@ void MainWindow::on_readCAS_clicked()
         if (curAlgoMode == 0) {
             // 停止时钟发送
             on_timerSet_clicked();
-
             canpack.CANData[4] = 0x00;  // 告知请求
-
             if (ui->checkBox->isChecked() && ui->checkBox_2->isChecked()) {
                 QMessageBox::critical(0, "警告！", "只能同时启动对一个CAS节点的数据读取！.",QMessageBox::Cancel);
                 return;
@@ -1579,24 +1682,45 @@ void MainWindow::on_PosiLoopSyncInit_clicked()
     static int initZOffAxisPosi[2] ={laFData_CH[0].feedbackPosium, laFData_CH[1].feedbackPosium};
     int cmp = 0;
 
-    // 先检查当前Z轴相对位移位置
+    if (ui->DualMotorPosi->isChecked()) {
+        // 给定数据范围检查
+        cmp = ui->refPosiSig->text().toInt() + initZOffAxisPosi[0];
+        if ((cmp < LEFT_START_POSI) || (cmp > LEFT_END_POSI)) {
+            QMessageBox::critical(0, "警告！", "Z轴左电机预设运动目标超限，请重新设置目标位置坐标！...",QMessageBox::Cancel);
+            goto __end;
+        }
+        posiTask.relevantInitPosi[0] = cmp;
 
-    // 调整双Z轴至误差为0? (在运动过程中调整吧)
+        cmp = ui->refPosiSig->text().toInt() + initZOffAxisPosi[1];
+        if ((cmp < RIGHT_START_POSI) || (cmp > RIGHT_END_POSI)) {
+            QMessageBox::critical(0, "警告！", "Z轴右电机预设运动目标超限，请重新设置目标位置坐标！...",QMessageBox::Cancel);
+            posiTask.relevantInitPosi[0] = 0;
+            goto __end;
+        }
+        posiTask.relevantInitPosi[1] = cmp;
+        posiTask.taskPosiUM = ui->refPosiSig->text().toInt(); // 设定目标任务距离
 
-    // 给定数据范围检查
-    cmp = ui->refPosiSig->text().toInt() + initZOffAxisPosi[0];
-    if ((cmp < LEFT_START_POSI) || (cmp > LEFT_END_POSI)) {
-        QMessageBox::critical(0, "警告！", "Z轴左电机预设运动目标超限，请重新设置目标位置坐标！...",QMessageBox::Cancel);
-        goto __end;
+        // 同步控制算法选取
+        #if CCC_ALGO_ENABLE
+            controllerInit();
+        #else
+            //smcAlgoInit();
+        #endif
+        posiSyncModeEnabled = 1; // 启动同步运动
+    } else {
+        if ((ui->checkBox->isChecked()) && (ui->checkBox_2->isChecked())) {
+            QMessageBox::critical(0, "警告！", "当前为单机位置环调试模式！若需双机同步控制重新选择调试模式！...",QMessageBox::Cancel);
+            goto __end;
+        }
+        if (ui->checkBox->isChecked()) {
+            PIDController_Init(&posiPIDA);
+            posiSyncModeEnabled = 2; // 启动单机z1位置环运动
+        }
+        if (ui->checkBox_2->isChecked()) {
+            PIDController_Init(&posiPIDB);
+            posiSyncModeEnabled = 3; // 启动单机z2位置环运动
+        }
     }
-
-    cmp = ui->refPosiSig->text().toInt() + initZOffAxisPosi[1];
-    if ((cmp < RIGHT_START_POSI) || (cmp > RIGHT_END_POSI)) {
-        QMessageBox::critical(0, "警告！", "Z轴右电机预设运动目标超限，请重新设置目标位置坐标！...",QMessageBox::Cancel);
-        goto __end;
-    }
-
-    posiSyncModeEnabled = 1; // 启动同步运动
 
 __end:
     statusLabel->setText(" Sync Task Setup Failed!");
@@ -1605,11 +1729,11 @@ __end:
 // 基本同步控制
 void posiSyncAlgoTask(void)
 {
-
-    // 获得实时误差
-
-    // 更新任务目标代价函数(旋转角尽量小)
-
+    #if CCC_AOGO_ENABLE
+        controlLoop(posiTask.taskPosiUM);
+    #else
+        // 更新任务目标代价函数(旋转角尽量小)
+    #endif
     // 输出两个Z轴电机的参考速度 / 参考转矩
     // 控制转矩得尽量快一些，速度可以相对低一些
 
@@ -1622,7 +1746,6 @@ void MainWindow::on_PosiLoopInit_2_clicked()
 {
     posiSyncModeEnabled = 0;
     on_synStop_clicked();
-
 }
 
 void MainWindow::updateSDRAMDataSlot(unsigned char sendNo, unsigned int currentSubPackNum, unsigned int totalPackNum, unsigned int writeNum, SUBPACK* array)
@@ -1635,7 +1758,7 @@ void MainWindow::updateSDRAMDataSlot(unsigned char sendNo, unsigned int currentS
             qDebug() << "All Has Down!\n";
             totalNum += totalPackNum * SUBPACKNUM + writeNum; // 总写入项数量
             // 调用写入文件函数
-
+            sdramDataSave(sendNo);
             totalNum = 0;
              QMessageBox::critical(0, "警告！", "数据接收已完成！！...",QMessageBox::Cancel);
             ui->CASUploadStatus->setText("CAS请求数据接收已完成！");

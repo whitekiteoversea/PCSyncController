@@ -1,0 +1,16 @@
+debug/datatracer.o
+debug/etherudp.o
+debug/main.o
+debug/mainwindow.o
+debug/pid.o
+debug/posiAlgo.o
+debug/qcustomplot.o
+debug/timemonitor.o
+debug/wirelessserialport.o
+debug/qrc_uisource.o
+debug/moc_datatracer.o
+debug/moc_etherudp.o
+debug/moc_mainwindow.o
+debug/moc_qcustomplot.o
+debug/moc_timemonitor.o
+debug/moc_wirelessserialport.o

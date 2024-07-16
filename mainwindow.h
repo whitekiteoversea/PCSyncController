@@ -48,8 +48,12 @@ public:
 
     // 文件存储
     char* GetCuurentFilePath();
-
+    // SDRAM文件存储为CAS
+    void sdramDataSave(unsigned char saveCASID);
+    // 绘图相关
     void FindSelectedPoint(QCPGraph *graph, QPoint select_point, double &key, double &value);
+    // 暴露给C的发送接口
+    void speedGivenUpdate(unsigned sendType, unsigned char sendNo);
 
 signals:
     void timerCTRSend(unsigned char presetTimerStatus); //发送定时器状态变更命令
@@ -131,6 +135,8 @@ uint8_t dpetc_U_update(unsigned char sendNo, feedbackData sampleData);
 
 short* posiRefCal(unsigned int dstPosiIncre); //根据目标位置增量生成速度参考曲线
 int satFunc(int inputS);
+
+void num2constStr(unsigned int num, const char* str); //
 
 // 基本同步控制算法
 void posiSyncAlgoTask(void);

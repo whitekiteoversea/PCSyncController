@@ -1,0 +1,16 @@
+release/datatracer.o
+release/etherudp.o
+release/main.o
+release/mainwindow.o
+release/pid.o
+release/posiAlgo.o
+release/qcustomplot.o
+release/timemonitor.o
+release/wirelessserialport.o
+release/qrc_uisource.o
+release/moc_datatracer.o
+release/moc_etherudp.o
+release/moc_mainwindow.o
+release/moc_qcustomplot.o
+release/moc_timemonitor.o
+release/moc_wirelessserialport.o

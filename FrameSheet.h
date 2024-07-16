@@ -247,13 +247,21 @@ typedef struct {
     int16_t avgRecord;
 } avgPosiRecord;
 
+typedef struct {
+    uint32_t relevantInitPosi[2]; // 起始相对位移
+    int32_t taskPosiUM;           // 本次任务的相位移
+} POSISYNCTASK;
+
 #pragma pack()
 
+// 字节序调整
 uint16_t WordCombine(uint8_t byte1, uint8_t byte2);
 
 extern volatile unsigned char curAlgoMode;
 extern SUBPACK frameSubpackArray[SUBPACKNUM];
-
 extern SUBPACK onceRecvArray[RESNUM];
+
+extern feedbackData laFData_CH[3];
+extern POSISYNCTASK posiTask;
 
 #endif // FRAMESHEET_H
