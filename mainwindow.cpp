@@ -527,7 +527,7 @@ void MainWindow::onTimeout(unsigned int RecvCurTimeStamp_Ms)
         if (ui->ETHMode->isChecked()) {
             curAlgoMode = 1; // ETH-CAS 预测控制模式
         }
-        refreshCnt=0;
+        refreshCnt = 0;
     }
 
     // 时间同步报文下发 1s
@@ -537,7 +537,7 @@ void MainWindow::onTimeout(unsigned int RecvCurTimeStamp_Ms)
 //    }
 
     // 周期查询报文下发时间 5ms (CAS模式下与时间同步报文合并)
-    if (requestPacketCnt >= 5) {
+    if (requestPacketCnt >= CONTROL_SENSOR_PERIOD_MS) {
         requestPacketCnt = 0;
         sendRequestSig(); //位置反馈获取
 
@@ -546,14 +546,32 @@ void MainWindow::onTimeout(unsigned int RecvCurTimeStamp_Ms)
             posiSyncAlgoTask();
             speedGivenUpdate(1, 1);
             speedGivenUpdate(1, 2);
+            dataCollection();
+
+            if ((checkTaskAccomplish(ui->refPosiSig->text().toInt(), getRelevantPositionA()) == 1) && \
+                (checkTaskAccomplish(ui->refPosiSig->text().toInt(), getRelevantPositionB()) == 1)) {
+                QMessageBox::information(0, "提示！", "龙门双曲负载运输任务已完成！！...",QMessageBox::Cancel);
+                posiSyncModeEnabled = 0;
+                qDebug() << " TASKTime: " + QString::number(dataCol.TaskTimeMS, 10) << "ms, "
+                         << "MAX rotateAngle: " << QString::number(dataCol.rotateAngle_ABS_MAX, 'g', 6) << " \n";
+            }
         }
         if (posiSyncModeEnabled == 2) {
             singleMotorPosiTask(1, ui->refPosiSig->text().toInt());
             speedGivenUpdate(0, 1);
+            if (checkTaskAccomplish(ui->refPosiSig->text().toInt(), getRelevantPositionA()) == 1) {
+                 QMessageBox::information(0, "提示！", "Motor1 位置环控制任务已完成！！...",QMessageBox::Cancel);
+                posiSyncModeEnabled = 0;
+            }
+
         }
         if (posiSyncModeEnabled == 3) {
             singleMotorPosiTask(2, ui->refPosiSig->text().toInt());
             speedGivenUpdate(0, 2);
+            if (checkTaskAccomplish(ui->refPosiSig->text().toInt(), getRelevantPositionB()) == 1) {
+                QMessageBox::information(0, "提示！", "Motor2 位置环控制任务已完成！！...",QMessageBox::Cancel);
+                posiSyncModeEnabled = 0;
+            }
         }
     }
 
@@ -1291,10 +1309,11 @@ void MainWindow::on_speedGiven_clicked()
 }
 
 //提供给同步算法进行发送
-void MainWindow::speedGivenUpdate(unsigned sendType, unsigned char sendNo)
+unsigned char MainWindow::speedGivenUpdate(unsigned sendType, unsigned char sendNo)
 {
+    unsigned char ret =0;
     CANFrame_STD canpack;
-    if (curAlgoMode == 0){
+    if (curAlgoMode == 0) {
         canpack.CANID.STDCANID.MasterOrSlave = 1; //Master下发
         canpack.CANID.STDCANID.CTRCode = 0x03;
         canpack.CANID.STDCANID.Reserve = 0;
@@ -1307,7 +1326,7 @@ void MainWindow::speedGivenUpdate(unsigned sendType, unsigned char sendNo)
                 canpack.CANData[4] = ((short)(posiPIDB.out) >> 8) & 0xFF;
                 canpack.CANData[5] = ((short)(posiPIDB.out)) & 0xFF;
             } else {
-                goto __end;
+                return ret;
             }
         } else {
             if (sendNo == 1) {
@@ -1317,15 +1336,13 @@ void MainWindow::speedGivenUpdate(unsigned sendType, unsigned char sendNo)
                 canpack.CANData[4] = ((short)(ccc_Control.controlSignalB) >> 8) & 0xFF;
                 canpack.CANData[5] = ((short)(ccc_Control.controlSignalB)) & 0xFF;
             } else {
-                goto __end;
+                return ret;
             }
         }
         canpack.CANID.STDCANID.NodeGroupID = sendNo;  // 右电机
         packetSend(sendNo, CANTargetCmd, (unsigned char *)(&canpack));
     }
-
-__end:
-
+    return ret;
 }
 
 //0x1E 开启时钟同步报文分发
@@ -1760,7 +1777,7 @@ void MainWindow::updateSDRAMDataSlot(unsigned char sendNo, unsigned int currentS
             // 调用写入文件函数
             sdramDataSave(sendNo);
             totalNum = 0;
-             QMessageBox::critical(0, "警告！", "数据接收已完成！！...",QMessageBox::Cancel);
+             QMessageBox::information(0, "警告！", "数据接收已完成！！...",QMessageBox::Cancel);
             ui->CASUploadStatus->setText("CAS请求数据接收已完成！");
              ui->readCAS->setText("请求CAS传输");
         } else if(currentSubPackNum < totalPackNum) {

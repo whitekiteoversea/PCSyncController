@@ -1,9 +1,11 @@
 #include "cccAlgo.h"
-#include "FrameSheet.h"
+#include <cmath>
 
 CCCCONTROLLER ccc_Control;
 PIDController posiPIDA;
 PIDController posiPIDB;
+
+MotionDataCol dataCol;
 
 void controllerInit(void)
 {
@@ -39,6 +41,7 @@ void controlLoop(int posiTaskum) {
 
     // 计算同步误差
     volatile int syncError = currentPositionA - currentPositionB + SETUP_HIGH_COMPENSATION_US;  // 位置同步补偿
+    ccc_Control.rotateAngle = atan((double)syncError/ZAXIS_DISTANCE);
 
     // 计算同步误差补偿，量纲为um
     short controlOutputA = syncError * ccc_Control.kp1 * (-1);
@@ -68,7 +71,31 @@ void singleMotorPosiTask(unsigned char sendNo, int posiTaskum)
 }
 
 //判断位置环控制任务是否完成
-void checkTaskAccomplish(void)
+// 任务指标：连续1s反馈数据与给定相差都在2%内
+unsigned char checkTaskAccomplish(unsigned int targetPosiUM, unsigned int returnPosiUM)
 {
+    unsigned char ret = 0;
+    static uint32_t arrivalPeriodCnt = 0;
+    int32_t trackErr = targetPosiUM - returnPosiUM;
+    if (((float)(std::abs(trackErr))/targetPosiUM) <= 0.02) {
+        arrivalPeriodCnt++;
+    } else {
+        arrivalPeriodCnt = 0;
+    }
+    if (arrivalPeriodCnt >= (1000/CONTROL_SENSOR_PERIOD_MS)) {
+        ret = 1;
+    }
+    return ret;
+}
 
+void dataCollection(void)
+{
+    dataCol.TaskTimeMS += CONTROL_SENSOR_PERIOD_MS;
+    if (dataCol.rotateAngle_MAX < ccc_Control.rotateAngle) {
+        dataCol.rotateAngle_MAX = ccc_Control.rotateAngle;
+    }
+    if (dataCol.rotateAngle_MIN > ccc_Control.rotateAngle) {
+        dataCol.rotateAngle_MIN = ccc_Control.rotateAngle;
+    }
+    dataCol.rotateAngle_ABS_MAX = ((dataCol.rotateAngle_MAX+dataCol.rotateAngle_MIN) > 0.0) ? abs(dataCol.rotateAngle_MAX) : abs(dataCol.rotateAngle_MIN);
 }

@@ -30,6 +30,8 @@
 
 #define MOTORTORQUE                (2.80)
 
+#define CONTROL_SENSOR_PERIOD_MS   (5)
+
 
 #pragma pack(1)
 
@@ -251,6 +253,20 @@ typedef struct {
     uint32_t relevantInitPosi[2]; // 起始相对位移
     int32_t taskPosiUM;           // 本次任务的相位移
 } POSISYNCTASK;
+
+
+// 数据统计
+typedef struct {
+   volatile uint32_t syncErrorUM_MAX;
+   volatile uint32_t syncErrorUM_EMS;
+
+   volatile float rotateAngle_MAX;
+   volatile float rotateAngle_MIN;
+   volatile float rotateAngle_ABS_MAX;
+   volatile float rotateAngle_EMS;
+
+   volatile unsigned int TaskTimeMS; // 任务总时间
+} MotionDataCol;
 
 #pragma pack()
 

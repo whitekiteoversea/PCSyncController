@@ -53,7 +53,7 @@ public:
     // 绘图相关
     void FindSelectedPoint(QCPGraph *graph, QPoint select_point, double &key, double &value);
     // 暴露给C的发送接口
-    void speedGivenUpdate(unsigned sendType, unsigned char sendNo);
+    unsigned char speedGivenUpdate(unsigned sendType, unsigned char sendNo);
 
 signals:
     void timerCTRSend(unsigned char presetTimerStatus); //发送定时器状态变更命令

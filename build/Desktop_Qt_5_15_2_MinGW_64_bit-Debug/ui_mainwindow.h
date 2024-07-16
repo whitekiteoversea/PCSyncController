@@ -81,18 +81,19 @@ public:
     QGroupBox *groupBox_8;
     QWidget *layoutWidget5;
     QGridLayout *gridLayout_6;
+    QLabel *label_28;
     QPushButton *PosiLoopInit_2;
-    QLabel *PMSM2Posi;
-    QPushButton *PosiLoopSyncInit;
+    QLabel *label_25;
     QLabel *torque1;
+    QLabel *torque2;
     QLabel *label_26;
     QLabel *label_24;
     QLineEdit *refPosiSig;
-    QLabel *label_27;
-    QLabel *torque2;
     QLabel *PMSM1Posi;
-    QLabel *label_25;
-    QLabel *label_28;
+    QPushButton *PosiLoopSyncInit;
+    QLabel *PMSM2Posi;
+    QLabel *label_27;
+    QCheckBox *DualMotorPosi;
     QGroupBox *groupBox_9;
     QVBoxLayout *verticalLayout_2;
     QCheckBox *ETHMode;
@@ -404,67 +405,72 @@ public:
         gridLayout_6 = new QGridLayout(layoutWidget5);
         gridLayout_6->setObjectName(QString::fromUtf8("gridLayout_6"));
         gridLayout_6->setContentsMargins(0, 0, 0, 0);
+        label_28 = new QLabel(layoutWidget5);
+        label_28->setObjectName(QString::fromUtf8("label_28"));
+
+        gridLayout_6->addWidget(label_28, 8, 1, 1, 1);
+
         PosiLoopInit_2 = new QPushButton(layoutWidget5);
         PosiLoopInit_2->setObjectName(QString::fromUtf8("PosiLoopInit_2"));
 
-        gridLayout_6->addWidget(PosiLoopInit_2, 4, 1, 1, 1);
+        gridLayout_6->addWidget(PosiLoopInit_2, 7, 1, 1, 1);
 
-        PMSM2Posi = new QLabel(layoutWidget5);
-        PMSM2Posi->setObjectName(QString::fromUtf8("PMSM2Posi"));
-        PMSM2Posi->setAlignment(Qt::AlignCenter);
+        label_25 = new QLabel(layoutWidget5);
+        label_25->setObjectName(QString::fromUtf8("label_25"));
 
-        gridLayout_6->addWidget(PMSM2Posi, 3, 1, 1, 1);
-
-        PosiLoopSyncInit = new QPushButton(layoutWidget5);
-        PosiLoopSyncInit->setObjectName(QString::fromUtf8("PosiLoopSyncInit"));
-
-        gridLayout_6->addWidget(PosiLoopSyncInit, 4, 0, 1, 1);
+        gridLayout_6->addWidget(label_25, 8, 0, 1, 1);
 
         torque1 = new QLabel(layoutWidget5);
         torque1->setObjectName(QString::fromUtf8("torque1"));
 
-        gridLayout_6->addWidget(torque1, 7, 0, 1, 1);
-
-        label_26 = new QLabel(layoutWidget5);
-        label_26->setObjectName(QString::fromUtf8("label_26"));
-
-        gridLayout_6->addWidget(label_26, 2, 0, 1, 1);
-
-        label_24 = new QLabel(layoutWidget5);
-        label_24->setObjectName(QString::fromUtf8("label_24"));
-
-        gridLayout_6->addWidget(label_24, 0, 0, 1, 2);
-
-        refPosiSig = new QLineEdit(layoutWidget5);
-        refPosiSig->setObjectName(QString::fromUtf8("refPosiSig"));
-
-        gridLayout_6->addWidget(refPosiSig, 1, 0, 1, 2);
-
-        label_27 = new QLabel(layoutWidget5);
-        label_27->setObjectName(QString::fromUtf8("label_27"));
-
-        gridLayout_6->addWidget(label_27, 3, 0, 1, 1);
+        gridLayout_6->addWidget(torque1, 10, 0, 1, 1);
 
         torque2 = new QLabel(layoutWidget5);
         torque2->setObjectName(QString::fromUtf8("torque2"));
 
-        gridLayout_6->addWidget(torque2, 7, 1, 1, 1);
+        gridLayout_6->addWidget(torque2, 10, 1, 1, 1);
+
+        label_26 = new QLabel(layoutWidget5);
+        label_26->setObjectName(QString::fromUtf8("label_26"));
+
+        gridLayout_6->addWidget(label_26, 5, 0, 1, 1);
+
+        label_24 = new QLabel(layoutWidget5);
+        label_24->setObjectName(QString::fromUtf8("label_24"));
+
+        gridLayout_6->addWidget(label_24, 3, 0, 1, 1);
+
+        refPosiSig = new QLineEdit(layoutWidget5);
+        refPosiSig->setObjectName(QString::fromUtf8("refPosiSig"));
+
+        gridLayout_6->addWidget(refPosiSig, 3, 1, 1, 1);
 
         PMSM1Posi = new QLabel(layoutWidget5);
         PMSM1Posi->setObjectName(QString::fromUtf8("PMSM1Posi"));
         PMSM1Posi->setAlignment(Qt::AlignCenter);
 
-        gridLayout_6->addWidget(PMSM1Posi, 2, 1, 1, 1);
+        gridLayout_6->addWidget(PMSM1Posi, 5, 1, 1, 1);
 
-        label_25 = new QLabel(layoutWidget5);
-        label_25->setObjectName(QString::fromUtf8("label_25"));
+        PosiLoopSyncInit = new QPushButton(layoutWidget5);
+        PosiLoopSyncInit->setObjectName(QString::fromUtf8("PosiLoopSyncInit"));
 
-        gridLayout_6->addWidget(label_25, 5, 0, 1, 1);
+        gridLayout_6->addWidget(PosiLoopSyncInit, 7, 0, 1, 1);
 
-        label_28 = new QLabel(layoutWidget5);
-        label_28->setObjectName(QString::fromUtf8("label_28"));
+        PMSM2Posi = new QLabel(layoutWidget5);
+        PMSM2Posi->setObjectName(QString::fromUtf8("PMSM2Posi"));
+        PMSM2Posi->setAlignment(Qt::AlignCenter);
 
-        gridLayout_6->addWidget(label_28, 5, 1, 1, 1);
+        gridLayout_6->addWidget(PMSM2Posi, 6, 1, 1, 1);
+
+        label_27 = new QLabel(layoutWidget5);
+        label_27->setObjectName(QString::fromUtf8("label_27"));
+
+        gridLayout_6->addWidget(label_27, 6, 0, 1, 1);
+
+        DualMotorPosi = new QCheckBox(layoutWidget5);
+        DualMotorPosi->setObjectName(QString::fromUtf8("DualMotorPosi"));
+
+        gridLayout_6->addWidget(DualMotorPosi, 2, 1, 1, 1);
 
         groupBox_9 = new QGroupBox(centralwidget);
         groupBox_9->setObjectName(QString::fromUtf8("groupBox_9"));
@@ -732,7 +738,7 @@ public:
         MainWindow->setCentralWidget(centralwidget);
         menubar = new QMenuBar(MainWindow);
         menubar->setObjectName(QString::fromUtf8("menubar"));
-        menubar->setGeometry(QRect(0, 0, 1188, 21));
+        menubar->setGeometry(QRect(0, 0, 1188, 20));
         MainWindow->setMenuBar(menubar);
         statusbar = new QStatusBar(MainWindow);
         statusbar->setObjectName(QString::fromUtf8("statusbar"));
@@ -774,17 +780,18 @@ public:
         pushButton_2->setText(QCoreApplication::translate("MainWindow", "\346\211\247\350\241\214\345\231\2501\350\277\236\346\216\245", nullptr));
         pushButton_4->setText(QCoreApplication::translate("MainWindow", "\346\211\253\346\217\217\345\217\257\350\277\236\346\216\245\345\257\271\350\261\241", nullptr));
         groupBox_8->setTitle(QCoreApplication::translate("MainWindow", "\344\275\215\347\275\256\347\216\257\350\277\207\347\250\213\345\220\214\346\255\245\346\216\247\345\210\266", nullptr));
+        label_28->setText(QCoreApplication::translate("MainWindow", "\347\224\265\346\234\2722\350\275\254\347\237\251(0.001Nm)", nullptr));
         PosiLoopInit_2->setText(QCoreApplication::translate("MainWindow", "\347\264\247\346\200\245\345\210\266\345\212\250", nullptr));
-        PMSM2Posi->setText(QCoreApplication::translate("MainWindow", "0", nullptr));
-        PosiLoopSyncInit->setText(QCoreApplication::translate("MainWindow", "\344\275\215\347\275\256\345\220\214\346\255\245\350\277\220\345\212\250\347\256\227\346\263\225\345\220\257\345\212\250", nullptr));
+        label_25->setText(QCoreApplication::translate("MainWindow", "\347\224\265\346\234\2721\350\275\254\347\237\251(0.001Nm)", nullptr));
         torque1->setText(QCoreApplication::translate("MainWindow", "0", nullptr));
+        torque2->setText(QCoreApplication::translate("MainWindow", "0", nullptr));
         label_26->setText(QCoreApplication::translate("MainWindow", "PMSM1\344\275\215\347\275\256(um)", nullptr));
         label_24->setText(QCoreApplication::translate("MainWindow", "\347\273\231\345\256\232\344\275\215\347\247\273\345\242\236\351\207\217(um)\357\274\232", nullptr));
-        label_27->setText(QCoreApplication::translate("MainWindow", "PMSM2\344\275\215\347\275\256(um)", nullptr));
-        torque2->setText(QCoreApplication::translate("MainWindow", "0", nullptr));
         PMSM1Posi->setText(QCoreApplication::translate("MainWindow", "0", nullptr));
-        label_25->setText(QCoreApplication::translate("MainWindow", "\347\224\265\346\234\2721\350\275\254\347\237\251(0.001Nm)", nullptr));
-        label_28->setText(QCoreApplication::translate("MainWindow", "\347\224\265\346\234\2722\350\275\254\347\237\251(0.001Nm)", nullptr));
+        PosiLoopSyncInit->setText(QCoreApplication::translate("MainWindow", "\344\275\215\347\275\256\347\216\257\345\220\257\345\212\250", nullptr));
+        PMSM2Posi->setText(QCoreApplication::translate("MainWindow", "0", nullptr));
+        label_27->setText(QCoreApplication::translate("MainWindow", "PMSM2\344\275\215\347\275\256(um)", nullptr));
+        DualMotorPosi->setText(QCoreApplication::translate("MainWindow", "\345\217\214\346\234\272\344\275\215\347\275\256\345\220\214\346\255\245\346\250\241\345\274\217", nullptr));
         groupBox_9->setTitle(QCoreApplication::translate("MainWindow", "\347\263\273\347\273\237\350\277\220\350\241\214\346\250\241\345\274\217\346\216\247\345\210\266", nullptr));
         ETHMode->setText(QCoreApplication::translate("MainWindow", "ETH-CAS\346\250\241\345\274\217", nullptr));
         label_31->setText(QCoreApplication::translate("MainWindow", "\347\224\265\346\234\2721\350\277\220\350\241\214\346\250\241\345\274\217", nullptr));

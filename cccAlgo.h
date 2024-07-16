@@ -2,6 +2,7 @@
 #define CCCALGO_H
 
 #include "pid.h"
+#include "FrameSheet.h"
 
 typedef struct {
     volatile unsigned int positionA;
@@ -12,6 +13,8 @@ typedef struct {
     PIDController pidB;
     float kp1;
     float kp2;
+
+    float rotateAngle;
 } CCCCONTROLLER;
 
 float getRelevantPositionA(void);
@@ -22,10 +25,15 @@ void controlLoop(int posiTaskum);
 void controllerInit(void);
 
 void singleMotorPosiTask(unsigned char sendNo, int posiTaskum);
-void checkTaskAccomplish(void);
+unsigned char checkTaskAccomplish(unsigned int targetPosiUM, unsigned int returnPosiUM);
+
+// 数据统计函数
+void dataCollection(void);
 
 extern CCCCONTROLLER ccc_Control;
 extern PIDController posiPIDA;
 extern PIDController posiPIDB;
+
+extern MotionDataCol dataCol;
 
 #endif // CCCALGO_H

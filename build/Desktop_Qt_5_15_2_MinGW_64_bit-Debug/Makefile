@@ -252,6 +252,7 @@ Makefile: ../../AutoTransMonitor.pro I:/QT/5.15.2/mingw81_64/mkspecs/win32-g++/q
 		I:/QT/5.15.2/mingw81_64/mkspecs/features/qt_config.prf \
 		I:/QT/5.15.2/mingw81_64/mkspecs/win32-g++/qmake.conf \
 		I:/QT/5.15.2/mingw81_64/mkspecs/features/spec_post.prf \
+		.qmake.stash \
 		I:/QT/5.15.2/mingw81_64/mkspecs/features/exclusive_builds.prf \
 		I:/QT/5.15.2/mingw81_64/mkspecs/features/toolchain.prf \
 		I:/QT/5.15.2/mingw81_64/mkspecs/features/default_pre.prf \
@@ -286,7 +287,6 @@ Makefile: ../../AutoTransMonitor.pro I:/QT/5.15.2/mingw81_64/mkspecs/win32-g++/q
 		I:/QT/5.15.2/mingw81_64/lib/Qt5SerialPort.prl \
 		I:/QT/5.15.2/mingw81_64/lib/Qt5Core.prl \
 		I:/QT/5.15.2/mingw81_64/lib/qtmain.prl \
-		.qmake.stash \
 		I:/QT/5.15.2/mingw81_64/mkspecs/features/build_pass.prf \
 		../../uisource.qrc
 	$(QMAKE) -o Makefile ..\..\AutoTransMonitor.pro -spec win32-g++ "CONFIG+=debug" "CONFIG+=qml_debug"
@@ -472,6 +472,7 @@ I:/QT/5.15.2/mingw81_64/mkspecs/features/qt_functions.prf:
 I:/QT/5.15.2/mingw81_64/mkspecs/features/qt_config.prf:
 I:/QT/5.15.2/mingw81_64/mkspecs/win32-g++/qmake.conf:
 I:/QT/5.15.2/mingw81_64/mkspecs/features/spec_post.prf:
+.qmake.stash:
 I:/QT/5.15.2/mingw81_64/mkspecs/features/exclusive_builds.prf:
 I:/QT/5.15.2/mingw81_64/mkspecs/features/toolchain.prf:
 I:/QT/5.15.2/mingw81_64/mkspecs/features/default_pre.prf:
@@ -506,7 +507,6 @@ I:/QT/5.15.2/mingw81_64/lib/Qt5Network.prl:
 I:/QT/5.15.2/mingw81_64/lib/Qt5SerialPort.prl:
 I:/QT/5.15.2/mingw81_64/lib/Qt5Core.prl:
 I:/QT/5.15.2/mingw81_64/lib/qtmain.prl:
-.qmake.stash:
 I:/QT/5.15.2/mingw81_64/mkspecs/features/build_pass.prf:
 ../../uisource.qrc:
 qmake: FORCE
