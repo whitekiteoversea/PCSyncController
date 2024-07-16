@@ -117,6 +117,8 @@ int dst_Port = 8001;
 volatile unsigned int globalSynTime_ms = 0;
 volatile int requestPacketFlag = 0;   //发送标志
 
+volatile unsigned char taskAccomplishWindowPopFlag = 0;
+
 // 同步任务基本参数记录
 POSISYNCTASK posiTask;
 
@@ -456,6 +458,10 @@ void MainWindow::sendRequestSig()
             canpack.CANID.STDCANID.NodeGroupID = 0x02;  // 右电机
             packetSend(0x02, CANPosiAcquireCmd, (unsigned char *)(&canpack));
         }
+
+        canpack.CANID.STDCANID.NodeGroupID = 0x03;  // 负载X轴电机
+        packetSend(0x03, CANPosiAcquireCmd, (unsigned char *)(&canpack));
+
     } else if (curAlgoMode == 1) {
         //填写报文内容
         canpack.CANID.STDCANID.MasterOrSlave = 1;       // Master下发
@@ -550,7 +556,13 @@ void MainWindow::onTimeout(unsigned int RecvCurTimeStamp_Ms)
 
             if ((checkTaskAccomplish(ui->refPosiSig->text().toInt(), getRelevantPositionA()) == 1) && \
                 (checkTaskAccomplish(ui->refPosiSig->text().toInt(), getRelevantPositionB()) == 1)) {
-                QMessageBox::information(0, "提示！", "龙门双曲负载运输任务已完成！！...",QMessageBox::Cancel);
+                speedGivenUpdate(1, 0);
+                speedGivenUpdate(2, 0);
+
+                if (taskAccomplishWindowPopFlag == 0) {
+                    QMessageBox::information(0, "提示！", "龙门双曲负载运输任务已完成！！...",QMessageBox::Cancel);
+                    taskAccomplishWindowPopFlag++;
+                }
                 posiSyncModeEnabled = 0;
                 qDebug() << " TASKTime: " + QString::number(dataCol.TaskTimeMS, 10) << "ms, "
                          << "MAX rotateAngle: " << QString::number(dataCol.rotateAngle_ABS_MAX, 'g', 6) << " \n";
@@ -558,18 +570,26 @@ void MainWindow::onTimeout(unsigned int RecvCurTimeStamp_Ms)
         }
         if (posiSyncModeEnabled == 2) {
             singleMotorPosiTask(1, ui->refPosiSig->text().toInt());
-            speedGivenUpdate(0, 1);
+            speedGivenUpdate(1, (short)(posiPIDA.out));
             if (checkTaskAccomplish(ui->refPosiSig->text().toInt(), getRelevantPositionA()) == 1) {
-                 QMessageBox::information(0, "提示！", "Motor1 位置环控制任务已完成！！...",QMessageBox::Cancel);
+                speedGivenUpdate(1, 0);
+                if (taskAccomplishWindowPopFlag == 0) {
+                    QMessageBox::information(0, "提示！", "Motor1 位置环控制任务已完成！！...",QMessageBox::Cancel);
+                    taskAccomplishWindowPopFlag++;
+                }
                 posiSyncModeEnabled = 0;
             }
 
         }
         if (posiSyncModeEnabled == 3) {
             singleMotorPosiTask(2, ui->refPosiSig->text().toInt());
-            speedGivenUpdate(0, 2);
+            speedGivenUpdate(2, (short)(posiPIDB.out));
             if (checkTaskAccomplish(ui->refPosiSig->text().toInt(), getRelevantPositionB()) == 1) {
-                QMessageBox::information(0, "提示！", "Motor2 位置环控制任务已完成！！...",QMessageBox::Cancel);
+                speedGivenUpdate(2, 0);
+                if (taskAccomplishWindowPopFlag == 0) {
+                    QMessageBox::information(0, "提示！", "Motor2 位置环控制任务已完成！！...",QMessageBox::Cancel);
+                    taskAccomplishWindowPopFlag++;
+                }
                 posiSyncModeEnabled = 0;
             }
         }
@@ -1309,7 +1329,7 @@ void MainWindow::on_speedGiven_clicked()
 }
 
 //提供给同步算法进行发送
-unsigned char MainWindow::speedGivenUpdate(unsigned sendType, unsigned char sendNo)
+unsigned char MainWindow::speedGivenUpdate(unsigned char sendNo, short giveSpeedRPM)
 {
     unsigned char ret =0;
     CANFrame_STD canpack;
@@ -1317,28 +1337,8 @@ unsigned char MainWindow::speedGivenUpdate(unsigned sendType, unsigned char send
         canpack.CANID.STDCANID.MasterOrSlave = 1; //Master下发
         canpack.CANID.STDCANID.CTRCode = 0x03;
         canpack.CANID.STDCANID.Reserve = 0;
-
-        if (sendType == 0) {
-            if (sendNo == 1) {
-                canpack.CANData[4] = ((short)(posiPIDA.out) >> 8) & 0xFF;
-                canpack.CANData[5] = ((short)(posiPIDA.out)) & 0xFF;
-            } else if (sendNo == 2) {
-                canpack.CANData[4] = ((short)(posiPIDB.out) >> 8) & 0xFF;
-                canpack.CANData[5] = ((short)(posiPIDB.out)) & 0xFF;
-            } else {
-                return ret;
-            }
-        } else {
-            if (sendNo == 1) {
-                canpack.CANData[4] = ((short)(ccc_Control.controlSignalA) >> 8) & 0xFF;
-                canpack.CANData[5] = ((short)(ccc_Control.controlSignalA)) & 0xFF;
-            } else if (sendNo == 2) {
-                canpack.CANData[4] = ((short)(ccc_Control.controlSignalB) >> 8) & 0xFF;
-                canpack.CANData[5] = ((short)(ccc_Control.controlSignalB)) & 0xFF;
-            } else {
-                return ret;
-            }
-        }
+        canpack.CANData[4] = (giveSpeedRPM >> 8) & 0xFF;
+        canpack.CANData[5] = (giveSpeedRPM) & 0xFF;
         canpack.CANID.STDCANID.NodeGroupID = sendNo;  // 右电机
         packetSend(sendNo, CANTargetCmd, (unsigned char *)(&canpack));
     }
@@ -1698,6 +1698,8 @@ void MainWindow::on_PosiLoopSyncInit_clicked()
 {
     static int initZOffAxisPosi[2] ={laFData_CH[0].feedbackPosium, laFData_CH[1].feedbackPosium};
     int cmp = 0;
+
+    taskAccomplishWindowPopFlag = 0;
 
     if (ui->DualMotorPosi->isChecked()) {
         // 给定数据范围检查
