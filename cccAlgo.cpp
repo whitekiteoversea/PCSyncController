@@ -56,6 +56,30 @@ void controlLoop(int posiTaskum) {
     setControlSignalB(motorSpeed_rpm[1]);
 }
 
+void controlLoopWithWorkMode(int posiTaskum, unsigned char workMode) {
+    // 获取最新位置数据
+    unsigned int currentPositionA = getRelevantPositionA();
+    unsigned int currentPositionB = getRelevantPositionB();
+    // 控制输出
+    short motorSpeed_rpm[2] = {0};
+
+    // 计算同步误差
+    volatile int syncError = currentPositionA - currentPositionB + SETUP_HIGH_COMPENSATION_US;  // 位置同步补偿
+    ccc_Control.rotateAngle = atan((double)syncError/ZAXIS_DISTANCE);
+
+    // 计算同步误差补偿，量纲为um
+    short controlOutputA = syncError * ccc_Control.kp1 * (-1);
+    short controlOutputB = syncError * ccc_Control.kp2;
+
+    // 更新位置环输出
+    PIDController_Update_WorkMode(&ccc_Control.pidA, posiTaskum+controlOutputA, currentPositionA, workMode);
+    PIDController_Update_WorkMode(&ccc_Control.pidB, posiTaskum+controlOutputB, currentPositionB, workMode);
+
+    // 更新该周期控制输出
+    setControlSignalA(motorSpeed_rpm[0]);
+    setControlSignalB(motorSpeed_rpm[1]);
+}
+
 // 单机调试
 
 void singleMotorPosiTask(unsigned char sendNo, int posiTaskum)

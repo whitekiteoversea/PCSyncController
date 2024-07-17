@@ -24,10 +24,10 @@
 // 发送一次信号，这样可以有效避免发送撞车，但时间来不及了，后面测出问题再考虑增加吧
 
 // 功能开关
-#define TimeSyncEnable   (1)    //报文时钟同步默认开启
-#define SpeedSyncMode    (0)    //测试用，三通道速度给定一致
-
-#define CCC_AOGO_ENABLE  (1)    // 同步算法使用交叉耦合同步控制
+#define TimeSyncEnable       (1)    //报文时钟同步默认开启
+#define SpeedSyncMode        (0)    //测试用，三通道速度给定一致
+#define CCC_AOGO_ENABLE      (1)    // 同步算法使用交叉耦合同步控制
+#define SMC_SYNC_ALGO_ENABLE (0)
 
 // 数据存储相关
 #define maxStorageLen 12000
@@ -47,6 +47,8 @@ unsigned char transNum = 0;
 #define maxFrameNum_SpeedPre 59999
 
 // 同步控制相关
+
+volatile unsigned char PMSMCurWorkMode[2] = {0};
 volatile unsigned char posiSyncModeEnabled = 0;
 
 //可用串口列表
@@ -534,6 +536,10 @@ void MainWindow::onTimeout(unsigned int RecvCurTimeStamp_Ms)
             curAlgoMode = 1; // ETH-CAS 预测控制模式
         }
         refreshCnt = 0;
+
+        // 检查电机控制模式
+        PMSMCurWorkMode[0] = ui->modeSet1->currentText().toInt();
+        PMSMCurWorkMode[1] = ui->modeSet2->currentText().toInt();
     }
 
     // 时间同步报文下发 1s
@@ -1329,7 +1335,7 @@ void MainWindow::on_speedGiven_clicked()
 }
 
 //提供给同步算法进行发送
-unsigned char MainWindow::speedGivenUpdate(unsigned char sendNo, short giveSpeedRPM)
+unsigned char MainWindow::speedGivenUpdate(unsigned char sendNo, short giveControlInput)
 {
     unsigned char ret =0;
     CANFrame_STD canpack;
@@ -1337,9 +1343,9 @@ unsigned char MainWindow::speedGivenUpdate(unsigned char sendNo, short giveSpeed
         canpack.CANID.STDCANID.MasterOrSlave = 1; //Master下发
         canpack.CANID.STDCANID.CTRCode = 0x03;
         canpack.CANID.STDCANID.Reserve = 0;
-        canpack.CANData[4] = (giveSpeedRPM >> 8) & 0xFF;
-        canpack.CANData[5] = (giveSpeedRPM) & 0xFF;
-        canpack.CANID.STDCANID.NodeGroupID = sendNo;  // 右电机
+        canpack.CANData[4] = (giveControlInput >> 8) & 0xFF;
+        canpack.CANData[5] = (giveControlInput & 0xFF);
+        canpack.CANID.STDCANID.NodeGroupID = sendNo;
         packetSend(sendNo, CANTargetCmd, (unsigned char *)(&canpack));
     }
     return ret;
@@ -1749,7 +1755,7 @@ __end:
 void posiSyncAlgoTask(void)
 {
     #if CCC_AOGO_ENABLE
-        controlLoop(posiTask.taskPosiUM);
+        controlLoopWithWorkMode(posiTask.taskPosiUM, PMSMCurWorkMode[0]); // 同步时双电机控制模式应一致
     #else
         // 更新任务目标代价函数(旋转角尽量小)
     #endif

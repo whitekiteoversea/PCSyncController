@@ -280,4 +280,5 @@ extern SUBPACK onceRecvArray[RESNUM];
 extern feedbackData laFData_CH[3];
 extern POSISYNCTASK posiTask;
 
+extern volatile unsigned char PMSMCurWorkMode[2];
 #endif // FRAMESHEET_H

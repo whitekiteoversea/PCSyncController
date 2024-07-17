@@ -35,4 +35,7 @@ typedef struct {
 void  PIDController_Init(PIDController *pid);
 float PIDController_Update(PIDController *pid, float setpoint, float measurement);
 
+void PIDController_Init_WorkMode(PIDController *pid, unsigned char workMode);
+short PIDController_Update_WorkMode(PIDController *pid, float setpoint, float measurement, unsigned char workMode);
+
 #endif // PID_H

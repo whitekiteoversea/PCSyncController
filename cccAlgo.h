@@ -27,6 +27,8 @@ void controllerInit(void);
 void singleMotorPosiTask(unsigned char sendNo, int posiTaskum);
 unsigned char checkTaskAccomplish(unsigned int targetPosiUM, unsigned int returnPosiUM);
 
+void controlLoopWithWorkMode(int posiTaskum, unsigned char workMode);
+
 // 数据统计函数
 void dataCollection(void);
 
