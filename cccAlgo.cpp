@@ -4,8 +4,9 @@
 CCCCONTROLLER ccc_Control;
 PIDController posiPIDA;
 PIDController posiPIDB;
-
 MotionDataCol dataCol;
+
+short control_ut[2][UCONTROLLEN];
 
 void controllerInit(void)
 {
@@ -81,7 +82,6 @@ void controlLoopWithWorkMode(int posiTaskum, unsigned char workMode) {
 }
 
 // 单机调试
-
 void singleMotorPosiTask(unsigned char sendNo, int posiTaskum)
 {
     uint32_t realtimeRelevantPosium = 0;
@@ -95,11 +95,11 @@ void singleMotorPosiTask(unsigned char sendNo, int posiTaskum)
 }
 
 //判断位置环控制任务是否完成
-// 任务指标：连续1s反馈数据与给定相差都在2%内
-unsigned char checkTaskAccomplish(unsigned int targetPosiUM, unsigned int returnPosiUM)
+// 任务指标：连续1s反馈数据与给定相差都在5%内
+unsigned char checkTaskAccomplish(int targetPosiUM, unsigned int returnPosiUM)
 {
     unsigned char ret = 0;
-    static uint32_t arrivalPeriodCnt = 0;
+    static unsigned short arrivalPeriodCnt = 0;
     int32_t trackErr = targetPosiUM - returnPosiUM;
     if (((float)(std::abs(trackErr))/targetPosiUM) <= 0.02) {
         arrivalPeriodCnt++;

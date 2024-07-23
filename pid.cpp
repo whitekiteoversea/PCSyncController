@@ -1,8 +1,9 @@
 #include "pid.h"
 #include "FrameSheet.h"
+#include <QDebug>
 
 // 位置环缩放系数
-#define POSILOOPEXPANDCOFF   (100000)
+#define POSILOOPEXPANDCOFF   (10000)
 #define TORQUELOOPEXPANDCOFF (2800)
 
 void PIDController_Init(PIDController *pid) {
@@ -24,15 +25,15 @@ void PIDController_Init(PIDController *pid) {
 
     pid->T = 0.005; // 5ms周期
 
-    pid->Kp = 2;
+    pid->Kp = 5;
     pid->Ki= 0; // 位置环默认不进行积分
     pid->Kd = 0;
 
     pid->out = 0.0f;
 }
 
-void PIDController_Init_WorkMode(PIDController *pid, unsigned char workMode) {
-
+void PIDController_Init_WorkMode(PIDController *pid, unsigned char workMode)
+{
     /* Clear controller variables */
     pid->integrator = 0.0f;
     pid->prevError  = 0.0f;
@@ -59,14 +60,17 @@ void PIDController_Init_WorkMode(PIDController *pid, unsigned char workMode) {
         pid->limMaxInt = 2800;
         pid->limMinInt = -2800;
 
-        pid->Ki= 0.01; // 转矩换默认进行积分
+        pid->Ki= 0.0; // 转矩换默认进行积分
     }
 
     pid->T = 0.005; // 5ms周期
-    pid->Kp = 2;
+    pid->Kp = 5;
     pid->Kd = 0;
 
     pid->out = 0.0f;
+
+    pid->recCnt = 0;
+    pid->onlyShowOnceFlag = 0;
 }
 
 
@@ -74,7 +78,7 @@ void PIDController_Init_WorkMode(PIDController *pid, unsigned char workMode) {
 float PIDController_Update(PIDController *pid, float setpoint, float measurement) {
     float error = setpoint - measurement;
     float proportional = pid->Kp * error;
-    pid->integrator = pid->integrator + 0.5f * pid->Ki * pid->T * (error + pid->prevError);
+    pid->integrator = pid->integrator + 0.5f * pid->Ki * pid->T * (error + pid->prevError); // 梯形积分
 
     /* Anti-wind-up via integrator clamping */
     if (pid->integrator > pid->limMaxInt) {
@@ -88,15 +92,6 @@ float PIDController_Update(PIDController *pid, float setpoint, float measurement
                         / (2.0f * pid->tau + pid->T);
 
     pid->out = proportional + pid->integrator + pid->differentiator;
-
-    // 2024.07.16
-    // 需要进行比例缩放到实际允许的控制输出范畴，比如这里已设定下位机PMSM速度环参考输入 [-1000,1000] rpm
-    // 以尽量避免使长期超过上下限，此时会导致环路控制实际开环，控制失效
-    // 无积分环节时上下限估算较为简单 Kp*|e|max = Kp*50000000
-    // PI时为 Kp*|e|max + Isum * Ki = Kp*50000000 + 10000000 *Ki
-    // P模式下最大 2*50000000/100000=1000 PI模式下最大 1200
-    // 实际上由于e一般很小(总任务距离只有最多400mm, 大多数时候跑200-300mm，即便缩放前也很难超限)
-    // PI模式下同样由于总行程有限，I的积分累积也有限，这里设置为最大行程的20%,即100mm
     pid->out  = pid->out / POSILOOPEXPANDCOFF;
 
     if (pid->out > pid->limMax) {
@@ -104,6 +99,8 @@ float PIDController_Update(PIDController *pid, float setpoint, float measurement
     } else if (pid->out < pid->limMin) {
         pid->out = pid->limMin;
     }
+
+    qDebug() << "PID->out" << QString::number(pid->out, 'g', 3) << "\n";
     pid->prevError       = error;
     pid->prevMeasurement = measurement;
     return pid->out;

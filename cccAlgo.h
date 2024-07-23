@@ -25,7 +25,7 @@ void controlLoop(int posiTaskum);
 void controllerInit(void);
 
 void singleMotorPosiTask(unsigned char sendNo, int posiTaskum);
-unsigned char checkTaskAccomplish(unsigned int targetPosiUM, unsigned int returnPosiUM);
+unsigned char checkTaskAccomplish(int targetPosiUM, unsigned int returnPosiUM);
 
 void controlLoopWithWorkMode(int posiTaskum, unsigned char workMode);
 

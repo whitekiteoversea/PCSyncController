@@ -273,12 +273,15 @@ typedef struct {
 // 字节序调整
 uint16_t WordCombine(uint8_t byte1, uint8_t byte2);
 
+#define UCONTROLLEN  (50000)
+
 extern volatile unsigned char curAlgoMode;
 extern SUBPACK frameSubpackArray[SUBPACKNUM];
 extern SUBPACK onceRecvArray[RESNUM];
-
 extern feedbackData laFData_CH[3];
 extern POSISYNCTASK posiTask;
+
+extern short control_ut[2][UCONTROLLEN]; // 记录生成的控制输出u(t)
 
 extern volatile unsigned char PMSMCurWorkMode[2];
 #endif // FRAMESHEET_H

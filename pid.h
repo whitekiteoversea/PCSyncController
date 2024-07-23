@@ -30,6 +30,10 @@ typedef struct {
     /* Controller output */
     float out;
 
+    // record Data
+    volatile unsigned int recCnt;
+    volatile unsigned int onlyShowOnceFlag;
+
 }PIDController;
 
 void  PIDController_Init(PIDController *pid);
