@@ -3,7 +3,7 @@
 #include <QDebug>
 
 // 位置环缩放系数
-#define POSILOOPEXPANDCOFF   (10000)
+#define POSILOOPEXPANDCOFF   (1000)
 #define TORQUELOOPEXPANDCOFF (2800)
 
 void PIDController_Init(PIDController *pid) {
@@ -64,7 +64,7 @@ void PIDController_Init_WorkMode(PIDController *pid, unsigned char workMode)
     }
 
     pid->T = 0.005; // 5ms周期
-    pid->Kp = 5;
+    pid->Kp = 30;
     pid->Kd = 0;
 
     pid->out = 0.0f;

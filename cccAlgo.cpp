@@ -106,7 +106,7 @@ unsigned char checkTaskAccomplish(int targetPosiUM, unsigned int returnPosiUM)
     } else {
         arrivalPeriodCnt = 0;
     }
-    if (arrivalPeriodCnt >= (1000/CONTROL_SENSOR_PERIOD_MS)) {
+    if (arrivalPeriodCnt >= (5000/CONTROL_SENSOR_PERIOD_MS)) {
         ret = 1;
     }
     return ret;

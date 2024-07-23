@@ -121,6 +121,7 @@ volatile int requestPacketFlag = 0;   //发送标志
 
 // 位置环任务数据
 int initZOffAxisPosi[2] ={0, 0}; // 起始位置
+unsigned int targetPosium[2] = {0, 0};  // 目标相对位置
 volatile unsigned char taskAccomplishWindowPopFlag = 0;
 
 // 同步任务基本参数记录
@@ -526,7 +527,6 @@ void MainWindow::onTimeout(unsigned int RecvCurTimeStamp_Ms)
     static unsigned int rttDelaySyncCnt = 0;
     globalSynTime_ms = RecvCurTimeStamp_Ms;   //更新系统时间
     float givenSpeed = 0;
-    unsigned int targetPosium= 0;
 
     //刷新系统计时 500ms
     refreshCnt++;
@@ -567,60 +567,45 @@ void MainWindow::onTimeout(unsigned int RecvCurTimeStamp_Ms)
                 speedGivenUpdate(1, 0);
                 speedGivenUpdate(2, 0);
 
-                if (taskAccomplishWindowPopFlag == 0) {
-                    QMessageBox::information(0, "提示！", "龙门双驱动负载运输任务已完成！！...",QMessageBox::Cancel);
-                    taskAccomplishWindowPopFlag++;
-                }
+//                if (taskAccomplishWindowPopFlag == 0) {
+//                    QMessageBox::information(0, "提示！", "龙门双驱动负载运输任务已完成！！...",QMessageBox::Ok);
+//                    taskAccomplishWindowPopFlag++;
+//                }
                 posiSyncModeEnabled = 0;
                 qDebug() << " TASKTime: " + QString::number(dataCol.TaskTimeMS, 10) << "ms, "
                          << "MAX rotateAngle: " << QString::number(dataCol.rotateAngle_ABS_MAX, 'g', 6) << " \n";
             }
         }
         if (posiSyncModeEnabled == 2) {
-            singleMotorPosiTask(1, ui->refPosiSig->text().toInt());
+            singleMotorPosiTask(1, targetPosium[0]);
             speedGivenUpdate(1, (short)(posiPIDA.out));
-
-            targetPosium = ui->refPosiSig->text().toInt() + (initZOffAxisPosi[0] - LEFT_START_POSI);
-            if (checkTaskAccomplish(targetPosium, getRelevantPositionA()) == 1) {
+            if (checkTaskAccomplish(targetPosium[0], getRelevantPositionA()) == 1) {
                 speedGivenUpdate(1, 0);
-                if (posiPIDA.recCnt >= UCONTROLLEN) {
-                    posiPIDA.recCnt = 0;
-                }
-                control_ut[0][posiPIDA.recCnt] = (short)(posiPIDA.out);
-                posiPIDA.recCnt++;
-
-                if (taskAccomplishWindowPopFlag == 0) {
-                    if (posiPIDA.onlyShowOnceFlag == 0) {
-                        QMessageBox::information(0, "提示！", "Motor1 位置环控制任务已完成！！...",QMessageBox::Cancel);
-                        posiPIDA.onlyShowOnceFlag = 0;
-                        initZOffAxisPosi[0] = 0;
-                    }
-                    taskAccomplishWindowPopFlag++;
-                }
+//                if (taskAccomplishWindowPopFlag == 0) {
+//                    if (posiPIDA.onlyShowOnceFlag == 0) {
+//                        QMessageBox::information(0, "提示！", "Motor1 位置环控制任务已完成！！...",QMessageBox::Ok);
+//                        posiPIDA.onlyShowOnceFlag = 1;
+//                        initZOffAxisPosi[0] = 0;
+//                    }
+//                    taskAccomplishWindowPopFlag = 1;
+//                }
                 posiSyncModeEnabled = 0;
             }
 
         }
         if (posiSyncModeEnabled == 3) {
-            singleMotorPosiTask(2, ui->refPosiSig->text().toInt());
+            singleMotorPosiTask(2, targetPosium[1]);
             speedGivenUpdate(2, (short)(posiPIDB.out));
-
-            targetPosium = ui->refPosiSig->text().toInt() + initZOffAxisPosi[1] - RIGHT_START_POSI;
-            if (checkTaskAccomplish(targetPosium, getRelevantPositionB()) == 1) {
+            if (checkTaskAccomplish(targetPosium[1], getRelevantPositionB()) == 1) {
                 speedGivenUpdate(2, 0);
-                if (posiPIDB.recCnt >= UCONTROLLEN) {
-                    posiPIDB.recCnt = 0;
-                }
-                control_ut[0][posiPIDB.recCnt] = (short)(posiPIDB.out);
-                posiPIDB.recCnt++;
-                if (taskAccomplishWindowPopFlag == 0) {
-                    if (posiPIDB.onlyShowOnceFlag == 0) {
-                        QMessageBox::information(0, "提示！", "Motor2 位置环控制任务已完成！！...",QMessageBox::Cancel);
-                        posiPIDB.onlyShowOnceFlag = 0;
-                        initZOffAxisPosi[1] = 0;
-                    }
-                    taskAccomplishWindowPopFlag++;
-                }
+//               if (taskAccomplishWindowPopFlag == 0) {
+//                    if (posiPIDB.onlyShowOnceFlag == 0) {
+//                        QMessageBox::information(0, "提示！", "Motor2 位置环控制任务已完成！！...",QMessageBox::Ok);
+//                        posiPIDB.onlyShowOnceFlag = 1;
+//                        initZOffAxisPosi[1] = 0;
+//                    }
+//                    taskAccomplishWindowPopFlag = 1;
+//                }
                 posiSyncModeEnabled = 0;
             }
         }
@@ -1760,10 +1745,14 @@ void MainWindow::on_PosiLoopSyncInit_clicked()
             goto __end;
         }
         if (ui->checkBox->isChecked()) {
+            targetPosium[0] = ui->refPosiSig->text().toInt() + (initZOffAxisPosi[0] - LEFT_START_POSI);
+            ui->PMSM1TargetPosi->setText(QString::number((targetPosium[0]+LEFT_START_POSI), 10));
             PIDController_Init(&posiPIDA);
             posiSyncModeEnabled = 2; // 启动单机z1位置环运动
         }
         if (ui->checkBox_2->isChecked()) {
+            targetPosium[1] = ui->refPosiSig->text().toInt() + (initZOffAxisPosi[1] - RIGHT_START_POSI);
+            ui->PMSM2TargetPosi->setText(QString::number((targetPosium[1]+RIGHT_START_POSI), 10));
             PIDController_Init(&posiPIDB);
             posiSyncModeEnabled = 3; // 启动单机z2位置环运动
         }
@@ -1792,6 +1781,16 @@ void posiSyncAlgoTask(void)
 void MainWindow::on_PosiLoopInit_2_clicked()
 {
     posiSyncModeEnabled = 0;
+
+    targetPosium[0] = 0;
+    targetPosium[1] = 0;
+
+    initZOffAxisPosi[0] = 0;
+    initZOffAxisPosi[1] = 0;
+
+    ui->PMSM1TargetPosi->setText(QString::number(0, 10));
+    ui->PMSM2TargetPosi->setText(QString::number(0, 10));
+
     on_synStop_clicked();
 }
 
