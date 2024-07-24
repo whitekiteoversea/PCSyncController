@@ -273,7 +273,11 @@ typedef struct {
 // 字节序调整
 uint16_t WordCombine(uint8_t byte1, uint8_t byte2);
 
-#define UCONTROLLEN  (50000)
+// 功能开关
+#define TimeSyncEnable       (1)    //报文时钟同步默认开启
+#define SpeedSyncMode        (0)    //测试用，三通道速度给定一致
+#define CCC_ALGO_ENABLE      (1)    // 同步算法使用交叉耦合同步控制
+#define SMC_SYNC_ALGO_ENABLE (0)
 
 extern volatile unsigned char curAlgoMode;
 extern SUBPACK frameSubpackArray[SUBPACKNUM];
@@ -281,7 +285,6 @@ extern SUBPACK onceRecvArray[RESNUM];
 extern feedbackData laFData_CH[3];
 extern POSISYNCTASK posiTask;
 
-extern short control_ut[2][UCONTROLLEN]; // 记录生成的控制输出u(t)
 
 extern volatile unsigned char PMSMCurWorkMode[2];
 #endif // FRAMESHEET_H

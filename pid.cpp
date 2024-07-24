@@ -43,8 +43,8 @@ void PIDController_Init_WorkMode(PIDController *pid, unsigned char workMode)
 
     if (workMode == 0x03) {
         // 控制输出阈值
-        pid->limMin= -1000; // rpm
-        pid->limMax= 1000;  // rpm
+        pid->limMin= -10000; // 0.1rpm
+        pid->limMax= 10000;  // 0.1rpm
 
         // 积分上限
         pid->limMaxInt = 10000000;
@@ -54,7 +54,7 @@ void PIDController_Init_WorkMode(PIDController *pid, unsigned char workMode)
     } else if (workMode == 0x04) {
         // 控制输出阈值
         pid->limMin= -2800; // 0.001Nm
-        pid->limMax= 2800;  // rpm
+        pid->limMax= 2800;  //
 
         // 积分上限
         pid->limMaxInt = 2800;
@@ -111,7 +111,7 @@ short PIDController_Update_WorkMode(PIDController *pid, float setpoint, float me
 {
     float error = setpoint - measurement;
     float proportional = pid->Kp * error;
-    pid->integrator = pid->integrator + 0.5f * pid->Ki * pid->T * (error + pid->prevError); // 这里的0.5是？
+    pid->integrator = pid->integrator + 0.5f * pid->Ki * pid->T * (error + pid->prevError);
 
     /* Anti-wind-up via integrator clamping */
     if (pid->integrator > pid->limMaxInt) {

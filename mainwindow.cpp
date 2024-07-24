@@ -23,12 +23,6 @@
 // 对于ETH发送的处理其实比较粗陋，应该初始化一个队列对象，队列对象提供一个发送接口，每次发送都是向队列对象
 // 发送一次信号，这样可以有效避免发送撞车，但时间来不及了，后面测出问题再考虑增加吧
 
-// 功能开关
-#define TimeSyncEnable       (1)    //报文时钟同步默认开启
-#define SpeedSyncMode        (0)    //测试用，三通道速度给定一致
-#define CCC_AOGO_ENABLE      (1)    // 同步算法使用交叉耦合同步控制
-#define SMC_SYNC_ALGO_ENABLE (0)
-
 // 数据存储相关
 #define maxStorageLen 12000
 
@@ -519,6 +513,30 @@ void MainWindow::sendGivenPreSpeedSig(unsigned char sendNo, feedbackData sampleD
     EthUARRPRE u_arr;
 }
 
+
+void MainWindow::singleMotorPosiLoop(void)
+{
+    // Motor1
+    if (posiSyncModeEnabled == 2) {
+        singleMotorPosiTask(1, targetPosium[0]);
+        speedGivenUpdate(1, (short)(posiPIDA.out));
+        if (checkTaskAccomplish(targetPosium[0], getRelevantPositionA()) == 1) {
+            speedGivenUpdate(1, 0);
+            posiSyncModeEnabled = 0;
+        }
+    }
+
+    // Motor2
+    if (posiSyncModeEnabled == 3) {
+        singleMotorPosiTask(2, targetPosium[1]);
+        speedGivenUpdate(2, (short)(posiPIDB.out));
+        if (checkTaskAccomplish(targetPosium[1], getRelevantPositionB()) == 1) {
+            speedGivenUpdate(2, 0);
+            posiSyncModeEnabled = 0;
+        }
+    }
+}
+
 //定时器时基分配函数
 void MainWindow::onTimeout(unsigned int RecvCurTimeStamp_Ms)
 {
@@ -557,59 +575,29 @@ void MainWindow::onTimeout(unsigned int RecvCurTimeStamp_Ms)
 
         // 位置控制输出更新
         if (posiSyncModeEnabled == 1) {
+            // 控制更新
             posiSyncAlgoTask();
+            // 发送给定控制
             speedGivenUpdate(1, 1);
             speedGivenUpdate(1, 2);
+            // 过程指标数据记录
             dataCollection();
 
-            if ((checkTaskAccomplish(ui->refPosiSig->text().toInt(), getRelevantPositionA()) == 1) && \
-                (checkTaskAccomplish(ui->refPosiSig->text().toInt(), getRelevantPositionB()) == 1)) {
+            if ((checkTaskAccomplish(targetPosium[0], getRelevantPositionA()) == 1) && \
+                (checkTaskAccomplish(targetPosium[1], getRelevantPositionB()) == 1)) {
                 speedGivenUpdate(1, 0);
                 speedGivenUpdate(2, 0);
-
-//                if (taskAccomplishWindowPopFlag == 0) {
-//                    QMessageBox::information(0, "提示！", "龙门双驱动负载运输任务已完成！！...",QMessageBox::Ok);
-//                    taskAccomplishWindowPopFlag++;
-//                }
                 posiSyncModeEnabled = 0;
                 qDebug() << " TASKTime: " + QString::number(dataCol.TaskTimeMS, 10) << "ms, "
                          << "MAX rotateAngle: " << QString::number(dataCol.rotateAngle_ABS_MAX, 'g', 6) << " \n";
             }
         }
-        if (posiSyncModeEnabled == 2) {
-            singleMotorPosiTask(1, targetPosium[0]);
-            speedGivenUpdate(1, (short)(posiPIDA.out));
-            if (checkTaskAccomplish(targetPosium[0], getRelevantPositionA()) == 1) {
-                speedGivenUpdate(1, 0);
-//                if (taskAccomplishWindowPopFlag == 0) {
-//                    if (posiPIDA.onlyShowOnceFlag == 0) {
-//                        QMessageBox::information(0, "提示！", "Motor1 位置环控制任务已完成！！...",QMessageBox::Ok);
-//                        posiPIDA.onlyShowOnceFlag = 1;
-//                        initZOffAxisPosi[0] = 0;
-//                    }
-//                    taskAccomplishWindowPopFlag = 1;
-//                }
-                posiSyncModeEnabled = 0;
-            }
 
-        }
-        if (posiSyncModeEnabled == 3) {
-            singleMotorPosiTask(2, targetPosium[1]);
-            speedGivenUpdate(2, (short)(posiPIDB.out));
-            if (checkTaskAccomplish(targetPosium[1], getRelevantPositionB()) == 1) {
-                speedGivenUpdate(2, 0);
-//               if (taskAccomplishWindowPopFlag == 0) {
-//                    if (posiPIDB.onlyShowOnceFlag == 0) {
-//                        QMessageBox::information(0, "提示！", "Motor2 位置环控制任务已完成！！...",QMessageBox::Ok);
-//                        posiPIDB.onlyShowOnceFlag = 1;
-//                        initZOffAxisPosi[1] = 0;
-//                    }
-//                    taskAccomplishWindowPopFlag = 1;
-//                }
-                posiSyncModeEnabled = 0;
-            }
-        }
+        // 单电机位置环
+        singleMotorPosiLoop();
     }
+
+    // 计时++
     timeSyncPacketCnt++;
     requestPacketCnt++;
 }
@@ -1400,11 +1388,11 @@ EthUARRPRE MainWindow::preControllerUpdateY()
     return u_arr;
 }
 
-// 预测控制器更新 20ms为周期
+// 预测控制器更新 5ms为周期
 EthUARRPRE MainWindow::preControllerUpdate(uint32_t curTimeStamp, double *x_esti_arr, unsigned char prelen)
 {
     //discrete Model
-    uint8_t period_MS = 20;
+    uint8_t period_MS = 5;
 
     EthUARRPRE u_arr;
     uint8_t ii=0;
@@ -1709,6 +1697,7 @@ void MainWindow::on_PosiLoopSyncInit_clicked()
 {
     int cmp = 0;
     taskAccomplishWindowPopFlag = 0;
+    unsigned char workmode = 0;
 
     // 记录初始位移
     initZOffAxisPosi[0] = laFData_CH[0].feedbackPosium;
@@ -1747,13 +1736,16 @@ void MainWindow::on_PosiLoopSyncInit_clicked()
         if (ui->checkBox->isChecked()) {
             targetPosium[0] = ui->refPosiSig->text().toInt() + (initZOffAxisPosi[0] - LEFT_START_POSI);
             ui->PMSM1TargetPosi->setText(QString::number((targetPosium[0]+LEFT_START_POSI), 10));
-            PIDController_Init(&posiPIDA);
+
+            workmode = PMSMCurWorkMode[0];
+            PIDController_Init_WorkMode(&posiPIDA, workmode);
             posiSyncModeEnabled = 2; // 启动单机z1位置环运动
         }
         if (ui->checkBox_2->isChecked()) {
             targetPosium[1] = ui->refPosiSig->text().toInt() + (initZOffAxisPosi[1] - RIGHT_START_POSI);
             ui->PMSM2TargetPosi->setText(QString::number((targetPosium[1]+RIGHT_START_POSI), 10));
-            PIDController_Init(&posiPIDB);
+            workmode = PMSMCurWorkMode[1];
+            PIDController_Init_WorkMode(&posiPIDB, workmode);
             posiSyncModeEnabled = 3; // 启动单机z2位置环运动
         }
     }
@@ -1765,7 +1757,8 @@ __end:
 // 基本同步控制
 void posiSyncAlgoTask(void)
 {
-    #if CCC_AOGO_ENABLE
+    // 检查当前同步误差
+    #if CCC_ALGO_ENABLE
         controlLoopWithWorkMode(posiTask.taskPosiUM, PMSMCurWorkMode[0]); // 同步时双电机控制模式应一致
     #else
         // 更新任务目标代价函数(旋转角尽量小)

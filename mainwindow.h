@@ -54,6 +54,10 @@ public:
     void FindSelectedPoint(QCPGraph *graph, QPoint select_point, double &key, double &value);
     // 暴露给C的发送接口
     unsigned char speedGivenUpdate(unsigned char sendNo, short giveControlInput);
+
+    // 位置环
+    void singleMotorPosiLoop(void);
+
 signals:
     void timerCTRSend(unsigned char presetTimerStatus); //发送定时器状态变更命令
     void ethernetCloseCTRSend();                        //结束以太网接收线程

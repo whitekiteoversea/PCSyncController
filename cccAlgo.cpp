@@ -6,12 +6,11 @@ PIDController posiPIDA;
 PIDController posiPIDB;
 MotionDataCol dataCol;
 
-short control_ut[2][UCONTROLLEN];
-
 void controllerInit(void)
 {
-    PIDController_Init(&ccc_Control.pidA);
-    PIDController_Init(&ccc_Control.pidB);
+    PIDController_Init_WorkMode(&ccc_Control.pidA, 1);
+    PIDController_Init_WorkMode(&ccc_Control.pidB, 1);
+
     ccc_Control.kp1 = 0.4;
     ccc_Control.kp2 = 0.4;
 }
@@ -62,11 +61,13 @@ void controlLoopWithWorkMode(int posiTaskum, unsigned char workMode) {
     unsigned int currentPositionA = getRelevantPositionA();
     unsigned int currentPositionB = getRelevantPositionB();
     // 控制输出
-    short motorSpeed_rpm[2] = {0};
+    short motorSpeed_rpm[2] = {0, 0};
 
     // 计算同步误差
     volatile int syncError = currentPositionA - currentPositionB + SETUP_HIGH_COMPENSATION_US;  // 位置同步补偿
     ccc_Control.rotateAngle = atan((double)syncError/ZAXIS_DISTANCE);
+
+#if CCC_ALGO_ENABLE
 
     // 计算同步误差补偿，量纲为um
     short controlOutputA = syncError * ccc_Control.kp1 * (-1);
@@ -75,6 +76,12 @@ void controlLoopWithWorkMode(int posiTaskum, unsigned char workMode) {
     // 更新位置环输出
     PIDController_Update_WorkMode(&ccc_Control.pidA, posiTaskum+controlOutputA, currentPositionA, workMode);
     PIDController_Update_WorkMode(&ccc_Control.pidB, posiTaskum+controlOutputB, currentPositionB, workMode);
+
+#else
+
+
+
+#endif
 
     // 更新该周期控制输出
     setControlSignalA(motorSpeed_rpm[0]);
@@ -101,7 +108,9 @@ unsigned char checkTaskAccomplish(int targetPosiUM, unsigned int returnPosiUM)
     unsigned char ret = 0;
     static unsigned short arrivalPeriodCnt = 0;
     int32_t trackErr = targetPosiUM - returnPosiUM;
-    if (((float)(std::abs(trackErr))/targetPosiUM) <= 0.02) {
+    // 这里由于速度模式下下发命令为rpm，导致即使将误差率降低，也无法再实际产生调整（rpm<0.1rpm）
+//    if (((float)(std::abs(trackErr))/targetPosiUM) <= 0.01) {
+    if (std::abs(trackErr-targetPosiUM) <10){ //绝对误差<10um
         arrivalPeriodCnt++;
     } else {
         arrivalPeriodCnt = 0;
