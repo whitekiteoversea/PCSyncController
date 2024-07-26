@@ -547,13 +547,6 @@
        </property>
       </widget>
      </item>
-     <item row="1" column="0">
-      <widget class="QLabel" name="label_24">
-       <property name="text">
-        <string>给定位移增量(um)：</string>
-       </property>
-      </widget>
-     </item>
      <item row="1" column="1" colspan="2">
       <widget class="QLineEdit" name="refPosiSig"/>
      </item>
@@ -650,6 +643,13 @@
       <widget class="QLabel" name="torque2">
        <property name="text">
         <string>0</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="0" rowspan="2">
+      <widget class="QLabel" name="label_24">
+       <property name="text">
+        <string>给定位移增量/绝对同步位置(um)</string>
        </property>
       </widget>
      </item>

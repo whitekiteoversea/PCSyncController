@@ -87,7 +87,6 @@ void Etherudp::read_data()
             switch (recvCASFrame.EType) {
                 case CANPosiAcquireCmd:  //状态反馈
                     emit updateStatus(recvCASFrame.CASNodeID, recvCASFrame);
-                    qDebug() << "FeedbackPosi: " + QString::number(recvCASFrame.motorPosiUM ,10) + "um \n";
                 break;
 
                 case CANDriverInfoAcquire:  //SDRAM数据上传
@@ -103,7 +102,6 @@ void Etherudp::read_data()
                         frameSubpackArray[cnt].posi_um = recvCASSDRAMFrame.sdramSubPack[cnt].posi_um;
                     }
 
-                    qDebug() << "RECV PAck:" << recvCASSDRAMFrame.SubPackNum << "totalPackNum: " <<recvCASSDRAMFrame.totalSubPackNum << "\n";
                     emit updateSDRAMData(recvCASFrame.CASNodeID, \
                                          recvCASSDRAMFrame.SubPackNum, \
                                          recvCASSDRAMFrame.totalSubPackNum, \

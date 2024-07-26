@@ -89,15 +89,15 @@ void controlLoopWithWorkMode(int posiTaskum, unsigned char workMode) {
 }
 
 // 单机调试
-void singleMotorPosiTask(unsigned char sendNo, int posiTaskum)
+void singleMotorPosiTask(unsigned char sendNo, int posiTaskum, unsigned char workMode)
 {
     uint32_t realtimeRelevantPosium = 0;
     if (sendNo == 1) {
         realtimeRelevantPosium = getRelevantPositionA();
-        PIDController_Update(&posiPIDA, posiTaskum, realtimeRelevantPosium);
+        PIDController_Update_WorkMode(&posiPIDA, posiTaskum, realtimeRelevantPosium, workMode);
     } else if (sendNo == 2) {
         realtimeRelevantPosium = getRelevantPositionB();
-        PIDController_Update(&posiPIDB, posiTaskum, realtimeRelevantPosium);
+        PIDController_Update_WorkMode(&posiPIDB, posiTaskum, realtimeRelevantPosium, workMode);
     }
 }
 

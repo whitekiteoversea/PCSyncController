@@ -518,7 +518,7 @@ void MainWindow::singleMotorPosiLoop(void)
 {
     // Motor1
     if (posiSyncModeEnabled == 2) {
-        singleMotorPosiTask(1, targetPosium[0]);
+        singleMotorPosiTask(1, targetPosium[0], PMSMCurWorkMode[0]);
         speedGivenUpdate(1, (short)(posiPIDA.out));
         if (checkTaskAccomplish(targetPosium[0], getRelevantPositionA()) == 1) {
             speedGivenUpdate(1, 0);
@@ -528,7 +528,7 @@ void MainWindow::singleMotorPosiLoop(void)
 
     // Motor2
     if (posiSyncModeEnabled == 3) {
-        singleMotorPosiTask(2, targetPosium[1]);
+        singleMotorPosiTask(2, targetPosium[1], PMSMCurWorkMode[1]);
         speedGivenUpdate(2, (short)(posiPIDB.out));
         if (checkTaskAccomplish(targetPosium[1], getRelevantPositionB()) == 1) {
             speedGivenUpdate(2, 0);
@@ -548,7 +548,7 @@ void MainWindow::onTimeout(unsigned int RecvCurTimeStamp_Ms)
 
     //刷新系统计时 500ms
     refreshCnt++;
-    if(refreshCnt >= 500) {
+    if (refreshCnt >= 500) {
         ui->label_4->setText(QString::number(globalSynTime_ms, 10));
 
         // 检查通信模式
@@ -562,12 +562,6 @@ void MainWindow::onTimeout(unsigned int RecvCurTimeStamp_Ms)
         PMSMCurWorkMode[1] = ui->modeSet2->currentText().toInt();
     }
 
-    // 时间同步报文下发 1s
-//    if (timeSyncPacketCnt >= 1000) {
-//        timeSyncPacketCnt = 0;
-//        sendTimeSyncSig();
-//    }
-
     // 周期查询报文下发时间 5ms (CAS模式下与时间同步报文合并)
     if (requestPacketCnt >= CONTROL_SENSOR_PERIOD_MS) {
         requestPacketCnt = 0;
@@ -578,13 +572,14 @@ void MainWindow::onTimeout(unsigned int RecvCurTimeStamp_Ms)
             // 控制更新
             posiSyncAlgoTask();
             // 发送给定控制
-            speedGivenUpdate(1, 1);
-            speedGivenUpdate(1, 2);
+            speedGivenUpdate(1, (short)(ccc_Control.pidA.out));
+            speedGivenUpdate(2, (short)(ccc_Control.pidB.out));
             // 过程指标数据记录
             dataCollection();
 
             if ((checkTaskAccomplish(targetPosium[0], getRelevantPositionA()) == 1) && \
                 (checkTaskAccomplish(targetPosium[1], getRelevantPositionB()) == 1)) {
+                // 抵达停机
                 speedGivenUpdate(1, 0);
                 speedGivenUpdate(2, 0);
                 posiSyncModeEnabled = 0;
@@ -606,14 +601,11 @@ void MainWindow::onTimeout(unsigned int RecvCurTimeStamp_Ms)
 void MainWindow::on_timerSet_clicked()
 {
     volatile unsigned char timerStatus_Now = 0;
-    if(ui->timerSet->text() == "计时开始")
-    {
+    if(ui->timerSet->text() == "计时开始") {
         timerStatus_Now = 1;
         ui->timerSet->setText("计时停止");
         emit timerCTRSend(timerStatus_Now);
-    }
-    else if(ui->timerSet->text() == "计时停止")
-    {
+    } else if(ui->timerSet->text() == "计时停止") {
         timerStatus_Now = 0;
         ui->timerSet->setText("计时开始");
         emit timerCTRSend(timerStatus_Now);
@@ -954,10 +946,8 @@ qint64 MainWindow::packetSend(unsigned char sendNo, unsigned char NodeCmd, unsig
         memset(&sendSTHCtlPack, 0, sizeof(sendSTHCtlPack));
         memset(&sendETHPack, 0, sizeof(sendETHPack));
 
-        switch(NodeCmd)
-        {
-            //速度给定(无预测)
-            case SPEEDCMD:
+        switch(NodeCmd) {
+            case SPEEDCMD: //速度给定(无预测)
                 sendSTHCtlPack.EType = 0x01;
                 if (sendNo >= 1 &&sendNo <= MAXCASNODENUM) {
                     memcpy(&(sendSTHCtlPack.canCmd[sendNo-1]), data, sizeof(CANFrame_STD));
@@ -1263,7 +1253,6 @@ void MainWindow::on_synStart_clicked()
         data1[i] = (cursendTime >> ((3-i)*8)) | 0x000000FF;
     }
     packetSend(0x01, 0x03, data1);
-    qDebug() << "1发送成功";
     Delay_xms(20);
 
     cursendTime = globalSynTime_ms;
@@ -1272,7 +1261,6 @@ void MainWindow::on_synStart_clicked()
         data2[i] = (cursendTime >> ((3-i)*8)) | 0x000000FF;
     }
     packetSend(0x02, 0x03, data2);
-    qDebug() << "2发送成功";
 }
 
 //测试用：根据面板上的速度给定进行运动
@@ -1536,8 +1524,6 @@ void MainWindow::on_PosiLoopInit_clicked()
 
     //变更系统控制模式
     workMode = 1;
-
-    qDebug() << "Now Start the Posi Ref! posiRef is" << QString::number(posiRef, 10);
 }
 
 // 导出PMSM1记录数据
@@ -1736,7 +1722,6 @@ void MainWindow::on_PosiLoopSyncInit_clicked()
         if (ui->checkBox->isChecked()) {
             targetPosium[0] = ui->refPosiSig->text().toInt() + (initZOffAxisPosi[0] - LEFT_START_POSI);
             ui->PMSM1TargetPosi->setText(QString::number((targetPosium[0]+LEFT_START_POSI), 10));
-
             workmode = PMSMCurWorkMode[0];
             PIDController_Init_WorkMode(&posiPIDA, workmode);
             posiSyncModeEnabled = 2; // 启动单机z1位置环运动
@@ -1794,7 +1779,6 @@ void MainWindow::updateSDRAMDataSlot(unsigned char sendNo, unsigned int currentS
 
     if (sendNo == 0x01) {
         if (currentSubPackNum == totalPackNum) {
-            qDebug() << "All Has Down!\n";
             totalNum += totalPackNum * SUBPACKNUM + writeNum; // 总写入项数量
             // 调用写入文件函数
             sdramDataSave(sendNo);
@@ -1813,7 +1797,6 @@ void MainWindow::updateSDRAMDataSlot(unsigned char sendNo, unsigned int currentS
         }
     } else if (sendNo == 0x02) {
         if (currentSubPackNum == totalPackNum) {
-            qDebug() << "All Has Down!\n";
             totalNum += totalPackNum * SUBPACKNUM + writeNum; // 总写入项数量
             // 调用写入文件函数
 

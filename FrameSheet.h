@@ -251,7 +251,7 @@ typedef struct {
 
 typedef struct {
     uint32_t relevantInitPosi[2]; // 起始相对位移
-    int32_t taskPosiUM;           // 本次任务的相位移
+    int32_t taskPosiUM;           // 本次任务的相对位移
 } POSISYNCTASK;
 
 
