@@ -9,28 +9,32 @@
 #define int16_t short
 #define uint32_t unsigned int
 
-#define BufMaxStorageCnt        (6000)
-#define SingleShotMaxStorageCnt (BufMaxStorageCnt/2)
+#define BufMaxStorageCnt                                        (6000)
+#define SingleShotMaxStorageCnt                                 (BufMaxStorageCnt/2)
 
-#define MAXDELAYLEN                (5)
-#define MAXCASNODENUM              (2)
+#define MAXDELAYLEN                                             (5)
+#define MAXCASNODENUM                                           (2)
 
 // 左侧绝对量程： 8697903 um - 9203551 um
-#define LEFT_START_POSI            (8697903)
-#define LEFT_END_POSI              (9203551)
+#define LEFT_START_POSI                                         (8697903)
+#define LEFT_END_POSI                                           (9203551)
 
 // 右侧绝对量程： 9259537 um - 9769376 um
-#define RIGHT_START_POSI           (9259537)
-#define RIGHT_END_POSI             (9769376)
+#define RIGHT_START_POSI                                        (9259537)
+#define RIGHT_END_POSI                                          (9769376)
 
 // 定义安装高度同步补偿 LEFT-RIGHT =X
-#define SETUP_HIGH_COMPENSATION_US (0)
+#define SETUP_HIGH_COMPENSATION_UM                              (0)
+#define MAX_ALLOWED_MECHANICAL_ERROR_UM                         (100)
+
 // Z轴轴距
-#define ZAXIS_DISTANCE             (74000000)
+#define ZAXIS_DISTANCE                                          (740000)
+// 额定转矩
+#define MOTORTORQUE                                             (2.80)
+// 控制周期
+#define CONTROL_SENSOR_PERIOD_MS                                (5)
 
-#define MOTORTORQUE                (2.80)
-
-#define CONTROL_SENSOR_PERIOD_MS   (5)
+#define RAD_DU                                                  (57.2958)
 
 
 #pragma pack(1)
@@ -252,6 +256,7 @@ typedef struct {
 typedef struct {
     uint32_t relevantInitPosi[2]; // 起始相对位移
     int32_t taskPosiUM;           // 本次任务的相对位移
+    unsigned char taskPeriod;     // 任务所处阶段： 1 调整初始误差 2 同步启动 3 同步任务完成
 } POSISYNCTASK;
 
 

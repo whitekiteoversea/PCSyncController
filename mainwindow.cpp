@@ -513,7 +513,6 @@ void MainWindow::sendGivenPreSpeedSig(unsigned char sendNo, feedbackData sampleD
     EthUARRPRE u_arr;
 }
 
-
 void MainWindow::singleMotorPosiLoop(void)
 {
     // Motor1
@@ -541,12 +540,8 @@ void MainWindow::singleMotorPosiLoop(void)
 void MainWindow::onTimeout(unsigned int RecvCurTimeStamp_Ms)
 {
     static unsigned int requestPacketCnt = 0;
-    static unsigned int timeSyncPacketCnt = 0;
-    static unsigned int rttDelaySyncCnt = 0;
     globalSynTime_ms = RecvCurTimeStamp_Ms;   //更新系统时间
-    float givenSpeed = 0;
 
-    //刷新系统计时 500ms
     refreshCnt++;
     if (refreshCnt >= 500) {
         ui->label_4->setText(QString::number(globalSynTime_ms, 10));
@@ -569,22 +564,19 @@ void MainWindow::onTimeout(unsigned int RecvCurTimeStamp_Ms)
 
         // 位置控制输出更新
         if (posiSyncModeEnabled == 1) {
-            // 控制更新
             posiSyncAlgoTask();
-            // 发送给定控制
-            speedGivenUpdate(1, (short)(ccc_Control.pidA.out));
-            speedGivenUpdate(2, (short)(ccc_Control.pidB.out));
-            // 过程指标数据记录
-            dataCollection();
-
+            speedGivenUpdate(1, ccc_Control.controlSignalA);
+            speedGivenUpdate(2, ccc_Control.controlSignalB);
+            dataCollection();// 过程指标数据记录
             if ((checkTaskAccomplish(targetPosium[0], getRelevantPositionA()) == 1) && \
                 (checkTaskAccomplish(targetPosium[1], getRelevantPositionB()) == 1)) {
                 // 抵达停机
                 speedGivenUpdate(1, 0);
                 speedGivenUpdate(2, 0);
+                if (ccc_Control.taskAccomplishFlag == 0) {
+                    ccc_Control.taskAccomplishFlag = 1;
+                }
                 posiSyncModeEnabled = 0;
-                qDebug() << " TASKTime: " + QString::number(dataCol.TaskTimeMS, 10) << "ms, "
-                         << "MAX rotateAngle: " << QString::number(dataCol.rotateAngle_ABS_MAX, 'g', 6) << " \n";
             }
         }
 
@@ -593,7 +585,6 @@ void MainWindow::onTimeout(unsigned int RecvCurTimeStamp_Ms)
     }
 
     // 计时++
-    timeSyncPacketCnt++;
     requestPacketCnt++;
 }
 
@@ -1163,6 +1154,7 @@ void MainWindow::updateRealTimeStatus(unsigned char sendNo, CASREPORTFRAME statu
 {
     static unsigned short cnt = 0;
     volatile static int syncErrorUM = 0;
+    double syncErr = 0;
 
     if (cnt >= maxStorageLen) {
         cnt =0;
@@ -1201,9 +1193,11 @@ void MainWindow::updateRealTimeStatus(unsigned char sendNo, CASREPORTFRAME statu
 
     // 更新同步误差
     if (ui->checkBox->isChecked() && ui->checkBox_2->isChecked()) {
-        syncErrorUM = laFData_CH[0].feedbackPosium - LEFT_START_POSI - laFData_CH[1].feedbackPosium + RIGHT_START_POSI + SETUP_HIGH_COMPENSATION_US;
-        ui->posiSyncError->setText(QString::number(syncErrorUM, 'f', 6));
-        ui->rotateAngle->setText(QString::number( (atan((double)syncErrorUM/ZAXIS_DISTANCE)),'f',6));
+        syncErrorUM = laFData_CH[0].feedbackPosium - LEFT_START_POSI - laFData_CH[1].feedbackPosium + RIGHT_START_POSI + SETUP_HIGH_COMPENSATION_UM;
+        ui->posiSyncError->setText(QString::number(syncErrorUM, 10));
+
+        syncErr = std::atan2(syncErrorUM, ZAXIS_DISTANCE)*RAD_DU;
+        ui->rotateAngle->setText(QString::number(syncErr, 'f', 6));
     }
 }
 
@@ -1509,22 +1503,22 @@ short* posiRefCal(unsigned int dstPosiIncre) {
 }
 
 //位置环给定位移运动：um
-void MainWindow::on_PosiLoopInit_clicked()
-{
-    //1、获取初始位置:以最近一次获取到的脉冲数为基本值
-    ui->PMSM1Posi->setText(QString::number(laFData_CH[0].feedbackPosium, 10));
-    ui->PMSM2Posi->setText(QString::number(laFData_CH[1].feedbackPosium, 10));
-    // ui->label_13->setText(QString::number(laFData_CH[2].feedbackPosium, 10));
+//void MainWindow::on_PosiLoopInit_clicked()
+//{
+//    //1、获取初始位置:以最近一次获取到的脉冲数为基本值
+//    ui->PMSM1Posi->setText(QString::number(laFData_CH[0].feedbackPosium, 10));
+//    ui->PMSM2Posi->setText(QString::number(laFData_CH[1].feedbackPosium, 10));
+//    // ui->label_13->setText(QString::number(laFData_CH[2].feedbackPosium, 10));
 
-    //终态参考位移给定
-    posiRef = ui->refPosiSig->text().toInt();
+//    //终态参考位移给定
+//    posiRef = ui->refPosiSig->text().toInt();
 
-    //初始化当前
-    PIDController_Init(&pid);
+//    //初始化当前
+//    PIDController_Init(&pid);
 
-    //变更系统控制模式
-    workMode = 1;
-}
+//    //变更系统控制模式
+//    workMode = 1;
+//}
 
 // 导出PMSM1记录数据
 void MainWindow::on_StorePMSM1_clicked()
@@ -1691,21 +1685,28 @@ void MainWindow::on_PosiLoopSyncInit_clicked()
 
     if (ui->DualMotorPosi->isChecked()) {
         // 给定数据范围检查
-        cmp = ui->refPosiSig->text().toInt() + initZOffAxisPosi[0];
+        cmp = ui->refPosiSig->text().toInt() + LEFT_START_POSI;
         if ((cmp < LEFT_START_POSI) || (cmp > LEFT_END_POSI)) {
             QMessageBox::critical(0, "警告！", "Z轴左电机预设运动目标超限，请重新设置目标位置坐标！...",QMessageBox::Cancel);
             goto __end;
         }
-        posiTask.relevantInitPosi[0] = cmp;
+        posiTask.relevantInitPosi[0] = ui->refPosiSig->text().toInt();
+        ui->PMSM1TargetPosi->setText(QString::number(cmp, 10));
 
-        cmp = ui->refPosiSig->text().toInt() + initZOffAxisPosi[1];
+        cmp = ui->refPosiSig->text().toInt() + RIGHT_START_POSI;
         if ((cmp < RIGHT_START_POSI) || (cmp > RIGHT_END_POSI)) {
             QMessageBox::critical(0, "警告！", "Z轴右电机预设运动目标超限，请重新设置目标位置坐标！...",QMessageBox::Cancel);
             posiTask.relevantInitPosi[0] = 0;
             goto __end;
         }
-        posiTask.relevantInitPosi[1] = cmp;
+        posiTask.relevantInitPosi[1] = ui->refPosiSig->text().toInt();
+        ui->PMSM2TargetPosi->setText(QString::number(cmp, 10));
+
         posiTask.taskPosiUM = ui->refPosiSig->text().toInt(); // 设定目标任务距离
+        workmode = PMSMCurWorkMode[0];
+        PIDController_Init_WorkMode(&ccc_Control.pidA, workmode);
+        workmode = PMSMCurWorkMode[1];
+        PIDController_Init_WorkMode(&ccc_Control.pidB, workmode);
 
         // 同步控制算法选取
         #if CCC_ALGO_ENABLE
@@ -1748,10 +1749,6 @@ void posiSyncAlgoTask(void)
     #else
         // 更新任务目标代价函数(旋转角尽量小)
     #endif
-    // 输出两个Z轴电机的参考速度 / 参考转矩
-    // 控制转矩得尽量快一些，速度可以相对低一些
-
-    // 发包
 }
 
 // 负载同步控制

@@ -14,6 +14,8 @@ typedef struct {
     float kp1;
     float kp2;
 
+    unsigned char taskAccomplishFlag;
+
     float rotateAngle;
 } CCCCONTROLLER;
 
@@ -27,7 +29,11 @@ void controllerInit(void);
 void singleMotorPosiTask(unsigned char sendNo, int posiTaskum, unsigned char workMode);
 unsigned char checkTaskAccomplish(int targetPosiUM, unsigned int returnPosiUM);
 
-void controlLoopWithWorkMode(int posiTaskum, unsigned char workMode);
+unsigned char controlLoopWithWorkMode(int posiTaskum, unsigned char workMode);
+
+// SMC
+unsigned char smcSyncTask(void);
+
 
 // 数据统计函数
 void dataCollection(void);

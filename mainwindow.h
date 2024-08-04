@@ -96,7 +96,7 @@ private slots:
     void on_synStart_clicked();
     void on_speedGiven_clicked();
     void on_pushButton_10_clicked();
-    void on_PosiLoopInit_clicked();
+    // void on_PosiLoopInit_clicked();
     void on_StorePMSM2_clicked();
     void on_StorePMSM1_clicked();
     void on_readCAS_clicked();
