@@ -20,12 +20,12 @@ void PIDController_Init(PIDController *pid) {
     pid->limMax= 1000;  // rpm
 
     // 积分上限
-    pid->limMaxInt = 10000000;
-    pid->limMinInt = -10000000;
+    pid->limMaxInt = 10000;
+    pid->limMinInt = -10000;
 
     pid->T = 0.005; // 5ms周期
 
-    pid->Kp = 5;
+    pid->Kp = 30;
     pid->Ki= 0; // 位置环默认不进行积分
     pid->Kd = 0;
 
@@ -47,8 +47,8 @@ void PIDController_Init_WorkMode(PIDController *pid, unsigned char workMode)
         pid->limMax= 10000;  // 0.1rpm
 
         // 积分上限
-        pid->limMaxInt = 10000000;
-        pid->limMinInt = -10000000;
+        pid->limMaxInt = 10000;
+        pid->limMinInt = -10000;
 
         pid->Ki= 0; // 位置环默认不进行积分
     } else if (workMode == 0x04) {
@@ -87,12 +87,13 @@ float PIDController_Update(PIDController *pid, float setpoint, float measurement
         pid->integrator = pid->limMinInt;
     }
 
-    pid->differentiator = -(2.0f * pid->Kd * (measurement - pid->prevMeasurement)	/* Note: derivative on measurement, therefore minus sign in front of equation! */
-                        + (2.0f * pid->tau - pid->T) * pid->differentiator)
-                        / (2.0f * pid->tau + pid->T);
+//    pid->differentiator = -(2.0f * pid->Kd * (measurement - pid->prevMeasurement)	/* Note: derivative on measurement, therefore minus sign in front of equation! */
+//                        + (2.0f * pid->tau - pid->T) * pid->differentiator)
+//                        / (2.0f * pid->tau + pid->T);
 
-    pid->out = proportional + pid->integrator + pid->differentiator;
-    pid->out  = pid->out / POSILOOPEXPANDCOFF;
+//    pid->out = proportional + pid->integrator + pid->differentiator;
+    pid->out = proportional + pid->integrator;
+    //pid->out  = pid->out / POSILOOPEXPANDCOFF;
 
     if (pid->out > pid->limMax) {
         pid->out = pid->limMax;
@@ -100,7 +101,7 @@ float PIDController_Update(PIDController *pid, float setpoint, float measurement
         pid->out = pid->limMin;
     }
 
-    qDebug() << "PID->out" << QString::number(pid->out, 'g', 3) << "\n";
+    // qDebug() << "PID->out" << QString::number(pid->out, 'g', 3) << "\n";
     pid->prevError       = error;
     pid->prevMeasurement = measurement;
     return pid->out;
@@ -120,11 +121,12 @@ short PIDController_Update_WorkMode(PIDController *pid, float setpoint, float me
         pid->integrator = pid->limMinInt;
     }
 
-    pid->differentiator = -(2.0f * pid->Kd * (measurement - pid->prevMeasurement)	/* Note: derivative on measurement, therefore minus sign in front of equation! */
-                            + (2.0f * pid->tau - pid->T) * pid->differentiator)
-                          / (2.0f * pid->tau + pid->T);
+//    pid->differentiator = -(2.0f * pid->Kd * (measurement - pid->prevMeasurement)	/* Note: derivative on measurement, therefore minus sign in front of equation! */
+//                            + (2.0f * pid->tau - pid->T) * pid->differentiator)
+//                          / (2.0f * pid->tau + pid->T);
 
-    pid->out = proportional + pid->integrator + pid->differentiator;
+//    pid->out = proportional + pid->integrator + pid->differentiator;
+      pid->out = proportional + pid->integrator;
 
     if (workMode == 0x03) {
         pid->out  = pid->out / POSILOOPEXPANDCOFF;
@@ -132,12 +134,16 @@ short PIDController_Update_WorkMode(PIDController *pid, float setpoint, float me
         pid->out  = pid->out / TORQUELOOPEXPANDCOFF;
     }
 
+    // 限幅
     if (pid->out > pid->limMax) {
         pid->out = pid->limMax;
+        qDebug() << "pid->limMax: " << pid->limMax << " \n";
     } else if (pid->out < pid->limMin) {
         pid->out = pid->limMin;
+        qDebug() << "pid->limMin: " << pid->limMin << " \n";
     }
     pid->prevError       = error;
     pid->prevMeasurement = measurement;
+
     return (short)(pid->out);
 }

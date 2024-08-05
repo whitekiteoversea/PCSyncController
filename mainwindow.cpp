@@ -1701,16 +1701,14 @@ void MainWindow::on_PosiLoopSyncInit_clicked()
         }
         posiTask.relevantInitPosi[1] = ui->refPosiSig->text().toInt();
         ui->PMSM2TargetPosi->setText(QString::number(cmp, 10));
-
         posiTask.taskPosiUM = ui->refPosiSig->text().toInt(); // 设定目标任务距离
-        workmode = PMSMCurWorkMode[0];
-        PIDController_Init_WorkMode(&ccc_Control.pidA, workmode);
-        workmode = PMSMCurWorkMode[1];
-        PIDController_Init_WorkMode(&ccc_Control.pidB, workmode);
+
+        // 复位同步状态机
+        posiTask.taskPeriod = 0;
 
         // 同步控制算法选取
         #if CCC_ALGO_ENABLE
-            controllerInit();
+            controllerInit(PMSMCurWorkMode[0]);
         #else
             //smcAlgoInit();
         #endif

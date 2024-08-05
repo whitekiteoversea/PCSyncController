@@ -24,9 +24,10 @@ float getRelevantPositionB(void);
 void setControlSignalA(unsigned short controlSignal);
 void setControlSignalB(unsigned short controlSignal);
 void controlLoop(int posiTaskum);
-void controllerInit(void);
+void controllerInit(unsigned char workMode);
 
 void singleMotorPosiTask(unsigned char sendNo, int posiTaskum, unsigned char workMode);
+void DualMotorPosiTask(CCCCONTROLLER *pCon, unsigned char sendNo, int posiTaskum, unsigned char workMode);
 unsigned char checkTaskAccomplish(int targetPosiUM, unsigned int returnPosiUM);
 
 unsigned char controlLoopWithWorkMode(int posiTaskum, unsigned char workMode);
