@@ -9,8 +9,8 @@ MotionDataCol dataCol;
 
 void controllerInit(unsigned char workMode)
 {
-    PIDController_Init_WorkMode(&ccc_Control.pidA, workMode);
-    PIDController_Init_WorkMode(&ccc_Control.pidB, workMode);
+    PIDController_Init_WorkMode(&(ccc_Control.pidA), workMode);
+    PIDController_Init_WorkMode(&(ccc_Control.pidB), workMode);
 
     ccc_Control.kp1 = 1.0;
     ccc_Control.kp2 = 1.0;
@@ -81,74 +81,69 @@ unsigned char controlLoopWithWorkMode(int posiTaskum, unsigned char workMode)
     volatile int syncError = currentPositionA - currentPositionB + SETUP_HIGH_COMPENSATION_UM;  // 位置同步误差
     static int64_t cmpAB = 0;
 
-    qDebug() << "Now SyncTask is Step" << posiTask.taskPeriod << "\n";
+    qDebug() << "Now SyncTask is Step" << posiTask.taskPeriod << " " << syncError << "\n";
 
-    if (posiTask.taskPeriod == 0) {
+    if (posiTask.taskPeriod == 0) { // 初始状态
         pointPosi[0] = currentPositionA;
         pointPosi[1] = currentPositionB;
         initialError[0] = currentPositionA - posiTaskum;
         initialError[1] = currentPositionB - posiTaskum - SETUP_HIGH_COMPENSATION_UM;
         cmpAB = initialError[0];
         cmpAB *= initialError[1];
-        qDebug() <<  initialError[0] <<  initialError[1] << cmpAB << "\n";
         posiTask.taskPeriod = 1;
-    } else if (posiTask.taskPeriod == 1) { //调平
-        if (cmpAB >= 0) { // 双机运动方向一致
-            // 判断是否需要进行预调平
-            if (syncError < MAX_ALLOWED_MECHANICAL_ERROR_UM) {
-                // 调平完成，重新设定同步初始位置
-                posiTask.relevantInitPosi[0] = getRelevantPositionA();
-                posiTask.relevantInitPosi[1] = getRelevantPositionB();
-                // 停车进入下一阶段
-                ccc_Control.pidA.out = 0;
-                ccc_Control.pidB.out = 0;
-                posiTask.taskPeriod = 2;
-                return ret;
+    } else if (posiTask.taskPeriod == 1) { // 调平
+        posiTask.taskPeriod = 2;
+        return ret;
+        #if POSI_TAB_ENABLE
+            if (cmpAB >= 0) { // 双机运动方向一致
+                // 判断是否需要进行预调平
+                if (std::abs(syncError) < MAX_ALLOWED_MECHANICAL_ERROR_UM) {
+                    // 调平完成，重新设定同步初始位置
+                    posiTask.relevantInitPosi[0] = getRelevantPositionA();
+                    posiTask.relevantInitPosi[1] = getRelevantPositionB();
+                    // 停车进入下一阶段
+                    ccc_Control.pidA.out = 0;
+                    ccc_Control.pidB.out = 0;
+                    posiTask.taskPeriod = 2;
+                    return ret;
+                }
+                // 当存在较大初始误差时，距离近的轴静止等待调平完成
+                if (std::abs(initialError[0]) <= std::abs(initialError[1])) {
+                    ccc_Control.pidA.out = 0;
+                    DualMotorPosiTask(&ccc_Control, 2, pointPosi[0], workMode);
+                    qDebug() << "A Still, B chase to " << pointPosi[0] << "\n";
+                    qDebug() << "PIDB out: " << ccc_Control.pidB.out << " \n";
+                } else {
+                    ccc_Control.pidB.out = 0;
+                    DualMotorPosiTask(&ccc_Control, 1, pointPosi[1], workMode);
+                    qDebug() << "B Still, A chase to " << pointPosi[1] << "\n";
+                    qDebug() << "PIDA out: " << ccc_Control.pidA.out << " \n";
+                }
+            } else { // 方向相反，此时无需考虑同步误差，直接下一阶段启动归中
+                posiTask.taskPeriod = 4;
             }
-            // 当存在较大初始误差时，距离近的轴静止等待调平完成
-            if (std::abs(initialError[0]) <= std::abs(initialError[1])) {
-                DualMotorPosiTask(&ccc_Control, 2, pointPosi[0], workMode);
-                qDebug() << "A Still, B chase to " << pointPosi[0] << "\n";
-                qDebug() << "PIDB out: " << ccc_Control.pidB.out << " \n";
-            } else {
-                DualMotorPosiTask(&ccc_Control, 1, pointPosi[1], workMode);
-                qDebug() << "B Still, A chase to " << pointPosi[1] << "\n";
-                qDebug() << "PIDA out: " << ccc_Control.pidA.out << " \n";
-            }
-        } else { // 方向相反，此时无需考虑同步误差，直接下一阶段启动归中
-            posiTask.taskPeriod = 4;
-        }
+        #endif
     } else if (posiTask.taskPeriod == 2) { // 同步启动
         ccc_Control.rotateAngle = std::atan2(syncError, ZAXIS_DISTANCE)*RAD_DU; // 更新同步旋转角度
-#if CCC_ALGO_ENABLE
-        if (ccc_Control.taskAccomplishFlag == 1) {
-            posiTask.taskPeriod = 3;
-            ccc_Control.pidA.out = 0;
-            ccc_Control.pidB.out = 0;
-            return ret;
-        }
-//        controlOutputA = syncError * ccc_Control.kp1 * (-1);
-//        controlOutputB = syncError * ccc_Control.kp2;
+        #if CCC_ALGO_ENABLE
+            if (ccc_Control.taskAccomplishFlag == 1) {
+                posiTask.taskPeriod = 3;
+                ccc_Control.pidA.out = 0;
+                ccc_Control.pidB.out = 0;
+            }
+            //        controlOutputA = syncError * ccc_Control.kp1 * (-1);
+            //        controlOutputB = syncError * ccc_Control.kp2;
+            controlOutputA = 0;
+            controlOutputB = 0;
 
-        controlOutputA = 0;
-        controlOutputB = 0;
-
-//        qDebug() << "PIDA_COF: " << controlOutputA << " \n";
-//        qDebug() << "PIDB_COF: " << controlOutputB << " \n";
-
-        compensateOutput[0] = posiTaskum+controlOutputA;
-        compensateOutput[1] = posiTaskum+controlOutputB;
-
-        // 更新位置环PID输出
-        PIDController_Update_WorkMode(&(ccc_Control.pidA), compensateOutput[0], currentPositionA, workMode);
-        PIDController_Update_WorkMode(&(ccc_Control.pidB), compensateOutput[1], currentPositionB, workMode);
-
-        qDebug() << "PIDA: " << ccc_Control.pidA.out << " \n";
-        qDebug() << "PIDB: " << ccc_Control.pidB.out << " \n";
-
-#else
-        smcSyncTask();
-#endif
+            compensateOutput[0] = posiTaskum+controlOutputA;
+            compensateOutput[1] = posiTaskum+controlOutputB;
+            // 更新位置环PID输出
+            PIDController_Update_WorkMode(&(ccc_Control.pidA), compensateOutput[0], currentPositionA, workMode);
+            PIDController_Update_WorkMode(&(ccc_Control.pidB), compensateOutput[1], currentPositionB, workMode);
+        #else
+            smcSyncTask();
+        #endif
     }  else if (posiTask.taskPeriod == 3) { // 同步任务执行完毕停车
         ccc_Control.pidA.out = 0;
         ccc_Control.pidB.out = 0;
@@ -185,11 +180,11 @@ void DualMotorPosiTask(CCCCONTROLLER *pCon, unsigned char sendNo, int posiTaskum
     uint32_t realtimeRelevantPosium = 0;
     if (sendNo == 1) {
         realtimeRelevantPosium = getRelevantPositionA();
-        qDebug() << "PIDA: " << realtimeRelevantPosium << "TargetUM:" << posiTaskum << "\n";
+        qDebug() << "PIDA RealTime: " << realtimeRelevantPosium << "TargetUM:" << posiTaskum << "\n";
         PIDController_Update_WorkMode(&(pCon->pidA), posiTaskum, realtimeRelevantPosium, workMode);
     } else if (sendNo == 2) {
         realtimeRelevantPosium = getRelevantPositionB();
-        qDebug() << "PIDB: " << realtimeRelevantPosium << "TargetUM:" << posiTaskum << "\n";
+        qDebug() << "PIDB RealTime: " << realtimeRelevantPosium << "TargetUM:" << posiTaskum << "\n";
         PIDController_Update_WorkMode(&(pCon->pidB), posiTaskum, realtimeRelevantPosium, workMode);
     }
 }
@@ -204,7 +199,7 @@ unsigned char checkTaskAccomplish(int targetPosiUM, unsigned int returnPosiUM)
     int32_t trackErr = targetPosiUM - returnPosiUM;
     // 这里由于速度模式下下发命令为rpm，导致即使将误差率降低，也无法再实际产生调整（rpm<0.1rpm）
 
-    if (std::abs(trackErr-targetPosiUM) <31){ //绝对误差<31um 根据相对较差的机械精度来决定
+    if (std::abs(trackErr-targetPosiUM) < 31){ //绝对误差<31um 根据相对较差的机械精度来决定
         arrivalPeriodCnt++;
     } else {
         arrivalPeriodCnt = 0;

@@ -40,15 +40,16 @@ void PIDController_Init_WorkMode(PIDController *pid, unsigned char workMode)
 
     pid->differentiator  = 0.0f;
     pid->prevMeasurement = 0.0f;
+    pid->Ki= 0.00;
 
     if (workMode == 0x03) {
         // 控制输出阈值
-        pid->limMin= -10000; // 0.1rpm
-        pid->limMax= 10000;  // 0.1rpm
+        pid->limMin= -100000; // 0.1rpm
+        pid->limMax= 100000;  // 0.1rpm
 
         // 积分上限
-        pid->limMaxInt = 10000;
-        pid->limMinInt = -10000;
+        pid->limMaxInt = 100000;
+        pid->limMinInt = -100000;
 
         pid->Ki= 0; // 位置环默认不进行积分
     } else if (workMode == 0x04) {
@@ -90,7 +91,6 @@ float PIDController_Update(PIDController *pid, float setpoint, float measurement
 //    pid->differentiator = -(2.0f * pid->Kd * (measurement - pid->prevMeasurement)	/* Note: derivative on measurement, therefore minus sign in front of equation! */
 //                        + (2.0f * pid->tau - pid->T) * pid->differentiator)
 //                        / (2.0f * pid->tau + pid->T);
-
 //    pid->out = proportional + pid->integrator + pid->differentiator;
     pid->out = proportional + pid->integrator;
     //pid->out  = pid->out / POSILOOPEXPANDCOFF;
@@ -106,7 +106,6 @@ float PIDController_Update(PIDController *pid, float setpoint, float measurement
     pid->prevMeasurement = measurement;
     return pid->out;
 }
-
 
 short PIDController_Update_WorkMode(PIDController *pid, float setpoint, float measurement, unsigned char workMode)
 {

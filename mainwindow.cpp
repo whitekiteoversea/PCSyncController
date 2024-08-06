@@ -85,10 +85,10 @@ volatile unsigned short g_PosiFeedNum_CH = initFrameNum_PosiFeed;
 //速度预测报文帧号 40000-59999
 volatile unsigned short g_PreFrameNum_CH[3] = {initFrameNum_SpeedPre, initFrameNum_SpeedPre, initFrameNum_SpeedPre};
 
-EthControlFrame sendUDPPack; //以太网报文头
+EthControlFrame sendUDPPack; // 以太网报文头
 curTime curTimeStamp;
 
-volatile unsigned char timeSynFlag = 0; //当前时钟同步状态
+volatile unsigned char timeSynFlag = 0; // 当前时钟同步状态
 volatile unsigned int lastSynSndTime = 0;
 
 //显示用计数
@@ -375,8 +375,6 @@ void MainWindow::FindSelectedPoint(QCPGraph *graph, QPoint select_point, double 
     }
 }
 
-
-
 void MainWindow::initStyle()
 {
     QFile file("C:/Users/WhiteKite2020/Desktop/styledemo/styledemo/other/qss/psblack.css");
@@ -565,11 +563,11 @@ void MainWindow::onTimeout(unsigned int RecvCurTimeStamp_Ms)
         // 位置控制输出更新
         if (posiSyncModeEnabled == 1) {
             posiSyncAlgoTask();
-            speedGivenUpdate(1, ccc_Control.controlSignalA);
-            speedGivenUpdate(2, ccc_Control.controlSignalB);
+            speedGivenUpdate(1, (short)(ccc_Control.pidA.out));
+            speedGivenUpdate(2, (short)(ccc_Control.pidB.out));
             dataCollection();// 过程指标数据记录
-            if ((checkTaskAccomplish(targetPosium[0], getRelevantPositionA()) == 1) && \
-                (checkTaskAccomplish(targetPosium[1], getRelevantPositionB()) == 1)) {
+            if ((checkTaskAccomplish(posiTask.taskPosiUM, getRelevantPositionA()) == 1) && \
+                (checkTaskAccomplish(posiTask.taskPosiUM, getRelevantPositionB()) == 1)) {
                 // 抵达停机
                 speedGivenUpdate(1, 0);
                 speedGivenUpdate(2, 0);
@@ -1701,7 +1699,8 @@ void MainWindow::on_PosiLoopSyncInit_clicked()
         }
         posiTask.relevantInitPosi[1] = ui->refPosiSig->text().toInt();
         ui->PMSM2TargetPosi->setText(QString::number(cmp, 10));
-        posiTask.taskPosiUM = ui->refPosiSig->text().toInt(); // 设定目标任务距离
+
+        posiTask.taskPosiUM = ui->refPosiSig->text().toInt(); // 设定目标位置
 
         // 复位同步状态机
         posiTask.taskPeriod = 0;
