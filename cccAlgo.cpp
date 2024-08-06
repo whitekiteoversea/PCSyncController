@@ -140,7 +140,9 @@ unsigned char controlLoopWithWorkMode(int posiTaskum, unsigned char workMode)
             compensateOutput[1] = posiTaskum+controlOutputB;
             // 更新位置环PID输出
             PIDController_Update_WorkMode(&(ccc_Control.pidA), compensateOutput[0], currentPositionA, workMode);
+            qDebug() << "PIDA output: " <<  ccc_Control.pidA.out << " \n";
             PIDController_Update_WorkMode(&(ccc_Control.pidB), compensateOutput[1], currentPositionB, workMode);
+            qDebug() << "PIDB output: " <<  ccc_Control.pidB.out << " \n";
         #else
             smcSyncTask();
         #endif

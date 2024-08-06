@@ -564,7 +564,10 @@ void MainWindow::onTimeout(unsigned int RecvCurTimeStamp_Ms)
         if (posiSyncModeEnabled == 1) {
             posiSyncAlgoTask();
             speedGivenUpdate(1, (short)(ccc_Control.pidA.out));
+            qDebug() << "SendSpeedA: " << (short)(ccc_Control.pidA.out) << " \n";
+
             speedGivenUpdate(2, (short)(ccc_Control.pidB.out));
+            qDebug() << "SendSpeedB: " << (short)(ccc_Control.pidB.out) << " \n";
             dataCollection();// 过程指标数据记录
             if ((checkTaskAccomplish(posiTask.taskPosiUM, getRelevantPositionA()) == 1) && \
                 (checkTaskAccomplish(posiTask.taskPosiUM, getRelevantPositionB()) == 1)) {
@@ -1499,24 +1502,6 @@ short* posiRefCal(unsigned int dstPosiIncre) {
 
     return speedRef;
 }
-
-//位置环给定位移运动：um
-//void MainWindow::on_PosiLoopInit_clicked()
-//{
-//    //1、获取初始位置:以最近一次获取到的脉冲数为基本值
-//    ui->PMSM1Posi->setText(QString::number(laFData_CH[0].feedbackPosium, 10));
-//    ui->PMSM2Posi->setText(QString::number(laFData_CH[1].feedbackPosium, 10));
-//    // ui->label_13->setText(QString::number(laFData_CH[2].feedbackPosium, 10));
-
-//    //终态参考位移给定
-//    posiRef = ui->refPosiSig->text().toInt();
-
-//    //初始化当前
-//    PIDController_Init(&pid);
-
-//    //变更系统控制模式
-//    workMode = 1;
-//}
 
 // 导出PMSM1记录数据
 void MainWindow::on_StorePMSM1_clicked()
