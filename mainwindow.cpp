@@ -103,9 +103,10 @@ volatile unsigned int firstTimeMs = 0;
 volatile unsigned int refreshCnt = 0;
 
 // 对端IP、Port
-QString dst_CASIP[2] = {"192.168.20.11","192.168.20.12"};
+QString dst_CASIP[2] = {"192.168.20.11", "192.168.20.12"};
 int dst_CASPort[2] = {8001, 8002};
 
+// ETH-CAS模式下的对端参数
 QString dst_IP = "192.168.1.30";
 int dst_Port = 8001;
 
@@ -140,7 +141,7 @@ MainWindow::MainWindow(QWidget *parent)
     Etherudp *localEthRecvTask = new Etherudp();
     localEthRecvTask->moveToThread(etherRecvThread);
 
-    //以太网发送用Socket，绑定发送端口
+    // 以太网发送用Socket，绑定发送端口
     sendSocket = new QUdpSocket(this);
     sendSocket->open(QIODevice::ReadWrite);
     sendSocket->bind(dst_Port);
@@ -226,9 +227,9 @@ MainWindow::MainWindow(QWidget *parent)
 
     //操作子线程中的定时器
     connect(this, SIGNAL(timerCTRSend(unsigned char)),
-            localTotalTimeThread, SLOT(timerStatusOperation(unsigned char)), Qt::AutoConnection);   //定时开始或结束
-    connect(localTotalTimeThread, SIGNAL(timerStartSig()),localTimer, SLOT(start()),Qt::AutoConnection);        //启动定时器
-    connect(localTotalTimeThread, SIGNAL(timerCloseSig()),localTimer, SLOT(stop()),Qt::AutoConnection);         //停止定时器
+            localTotalTimeThread, SLOT(timerStatusOperation(unsigned char)), Qt::AutoConnection);               // 定时开始或结束
+    connect(localTotalTimeThread, SIGNAL(timerStartSig()),localTimer, SLOT(start()),Qt::AutoConnection);        // 启动定时器
+    connect(localTotalTimeThread, SIGNAL(timerCloseSig()),localTimer, SLOT(stop()),Qt::AutoConnection);         // 停止定时器
 
     //打印当前计时时间戳
     connect(localTotalTimeThread, SIGNAL(cur_TimestampPrint(unsigned int)),
@@ -622,7 +623,6 @@ uint8_t nonblockingDelay_xms(uint32_t *lastTime, uint16_t delayMS)
     return ret;
 }
 
-
 //画刷设置
 void MainWindow::plotParaSetup()
 {
@@ -929,10 +929,15 @@ qint64 MainWindow::packetSend(unsigned char sendNo, unsigned char NodeCmd, unsig
         memset(SendBuffer, 0, sizeof(SendBuffer));
         memcpy(SendBuffer, &PC2CASFrame,sizeof(PC2CASFrame));
 
-        if (ui->checkBox->isChecked())
+        if (sendNo == 1)
             sendResult = sendSocket->writeDatagram((char *)SendBuffer, sizeof(PC2CASFrame), QHostAddress(dst_CASIP[0]), dst_CASPort[0]);
-        if (ui->checkBox_2->isChecked())
+        else if (sendNo == 2)
             sendResult = sendSocket->writeDatagram((char *)SendBuffer, sizeof(PC2CASFrame), QHostAddress(dst_CASIP[1]), dst_CASPort[1]);
+        else if (sendNo == 3) {
+            ;
+        } else {
+            ;
+        }
 
     } else if (curAlgoMode == 1) { //To ETH2CAS
         memset(&sendSTHCtlPack, 0, sizeof(sendSTHCtlPack));

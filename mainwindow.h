@@ -113,6 +113,7 @@ private:
     WirelessSerialPort *speedCurTask_2;
     QCPTextElement *m_title;
     QUdpSocket *sendSocket;  //发送Socket
+
     QAxObject *excel;
     QTime currentTime;
     QFile *pFile;
