@@ -1602,14 +1602,14 @@ void MainWindow::on_readCAS_clicked()
             on_timerSet_clicked();
             canpack.CANData[4] = 0x00;  // 告知请求
             if (ui->checkBox->isChecked() && ui->checkBox_2->isChecked()) {
-                QMessageBox::critical(0, "警告！", "只能同时启动对一个CAS节点的数据读取！.",QMessageBox::Cancel);
+                QMessageBox::critical(0, "警告！", "只能同时进行对一个CAS节点的数据读取！.",QMessageBox::Cancel);
                 return;
             }
 
-            if (ui->checkBox->isChecked()) {
+            if (ui->checkBox->isChecked() && !(ui->checkBox_2->isChecked())) {
                 canpack.CANID.STDCANID.NodeGroupID = 1;
                 packetSend(0x01, 0x0A, ((uint8_t *)&canpack));
-            } else if (ui->checkBox_2->isChecked()) {
+            } else if (!(ui->checkBox->isChecked()) && ui->checkBox_2->isChecked()) {
                 canpack.CANID.STDCANID.NodeGroupID = 2;
                 packetSend(0x02, 0x0A, ((uint8_t *)&canpack));
             }
@@ -1618,7 +1618,17 @@ void MainWindow::on_readCAS_clicked()
         }
         ui->CASUploadStatus->setText("等待请求回复");
    } else if (ui->readCAS->text() == "开始CAS传输") {
-        canpack.CANID.STDCANID.NodeGroupID = 1;
+
+        if (ui->checkBox->isChecked() && ui->checkBox_2->isChecked()) {
+            QMessageBox::critical(0, "警告！", "只能同时启动对一个CAS节点的数据读取！.",QMessageBox::Cancel);
+            return;
+        }
+        if (ui->checkBox->isChecked() &&!(ui->checkBox_2->isChecked())) {
+            canpack.CANID.STDCANID.NodeGroupID = 1;
+        } else if (!(ui->checkBox->isChecked()) && ui->checkBox_2->isChecked()) {
+            canpack.CANID.STDCANID.NodeGroupID = 2;
+        }
+
         canpack.CANData[4] = 0x01;
         packetSend(transNum, 0x0A, ((uint8_t *)&canpack));
         ui->CASUploadStatus->setText("等待CAS传输完成");
@@ -1761,45 +1771,27 @@ void MainWindow::updateSDRAMDataSlot(unsigned char sendNo, unsigned int currentS
     static unsigned int totalNum = 0;
     unsigned int cnt = 0;
 
-    if (sendNo == 0x01) {
-        if (currentSubPackNum == totalPackNum) {
-            totalNum += totalPackNum * SUBPACKNUM + writeNum; // 总写入项数量
-            // 调用写入文件函数
-            sdramDataSave(sendNo);
-            totalNum = 0;
-             QMessageBox::information(0, "警告！", "数据接收已完成！！...",QMessageBox::Cancel);
-            ui->CASUploadStatus->setText("CAS请求数据接收已完成！");
-             ui->readCAS->setText("请求CAS传输");
-        } else if(currentSubPackNum < totalPackNum) {
-            while (cnt <= writeNum) {
-                onceRecvArray[recordCnt].g_time_ms = array[cnt].g_time_ms;
-                onceRecvArray[recordCnt].l_time_ms = array[cnt].l_time_ms;
-                onceRecvArray[recordCnt].posi_um = array[cnt].posi_um;
-                recordCnt++;
-                cnt++;
-            }
+    if (currentSubPackNum == totalPackNum) {
+        totalNum += totalPackNum * SUBPACKNUM + writeNum; // 总写入项数量
+        // 调用写入文件函数
+        sdramDataSave(sendNo);
+        totalNum = 0;
+
+        if (sendNo == 0x01) {
+            QMessageBox::information(0, "警告！", "CAS1数据接收已完成！！...",QMessageBox::Cancel);
+        } else if (sendNo == 0x02) {
+             QMessageBox::information(0, "警告！", "CAS2数据接收已完成！！...",QMessageBox::Cancel);
         }
-    } else if (sendNo == 0x02) {
-        if (currentSubPackNum == totalPackNum) {
-            totalNum += totalPackNum * SUBPACKNUM + writeNum; // 总写入项数量
-            // 调用写入文件函数
 
-            if (ui->readCAS->text() == "等待CAS传输完成") {
-                ui->readCAS->setText("请求CAS传输");
-            }
-
-            totalNum = 0;
-            recordCnt = 0;
-
-        } else if(currentSubPackNum < totalPackNum) {
-            while (cnt <= writeNum) {
-                onceRecvArray[recordCnt].g_time_ms = array[cnt].g_time_ms;
-                onceRecvArray[recordCnt].l_time_ms = array[cnt].l_time_ms;
-                onceRecvArray[recordCnt].posi_um = array[cnt].posi_um;
-
-                recordCnt++;
-                cnt++;
-            }
+        ui->CASUploadStatus->setText("CAS请求数据接收已完成！");
+         ui->readCAS->setText("请求CAS传输");
+    } else if(currentSubPackNum < totalPackNum) {
+        while (cnt <= writeNum) {
+            onceRecvArray[recordCnt].g_time_ms = array[cnt].g_time_ms;
+            onceRecvArray[recordCnt].l_time_ms = array[cnt].l_time_ms;
+            onceRecvArray[recordCnt].posi_um = array[cnt].posi_um;
+            recordCnt++;
+            cnt++;
         }
     }
 }
