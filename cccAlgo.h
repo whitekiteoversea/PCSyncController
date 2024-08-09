@@ -26,6 +26,8 @@ void setControlSignalB(unsigned short controlSignal);
 void controlLoop(int posiTaskum);
 void controllerInit(unsigned char workMode);
 
+unsigned char checkMotionFinish(unsigned char motionPeriod); // 检测同步运动是否完成
+
 void singleMotorPosiTask(unsigned char sendNo, int posiTaskum, unsigned char workMode);
 void DualMotorPosiTask(CCCCONTROLLER *pCon, unsigned char sendNo, int posiTaskum, unsigned char workMode);
 unsigned char checkTaskAccomplish(int targetPosiUM, unsigned int returnPosiUM);

@@ -7,7 +7,7 @@
 #include <QTimer>
 #include <QUdpSocket>
 #include <QFileDialog>
-#include <QAxObject>
+//#include <QAxObject>
 #include <QDir>
 #include <QTime>
 #include "FrameSheet.h"
@@ -114,7 +114,7 @@ private:
     QCPTextElement *m_title;
     QUdpSocket *sendSocket;  //发送Socket
 
-    QAxObject *excel;
+    //QAxObject *excel;
     QTime currentTime;
     QFile *pFile;
 

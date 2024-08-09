@@ -1,6 +1,6 @@
 QT       += core gui
 
-greaterThan(QT_MAJOR_VERSION, 4): QT += widgets network serialport printsupport axcontainer
+greaterThan(QT_MAJOR_VERSION, 4): QT += widgets network serialport printsupport
 
 CONFIG += c++11
 

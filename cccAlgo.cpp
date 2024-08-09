@@ -1,6 +1,6 @@
 #include "cccAlgo.h"
 #include <cmath>
-#include <qDebug>
+#include <QDebug>
 
 CCCCONTROLLER ccc_Control;
 PIDController posiPIDA;
@@ -12,8 +12,8 @@ void controllerInit(unsigned char workMode)
     PIDController_Init_WorkMode(&(ccc_Control.pidA), workMode);
     PIDController_Init_WorkMode(&(ccc_Control.pidB), workMode);
 
-    ccc_Control.kp1 = 1.0;
-    ccc_Control.kp2 = 1.0;
+    ccc_Control.kp1 = 8.0;
+    ccc_Control.kp2 = 8.0;
 }
 
 float getRelevantPositionA() {
@@ -55,9 +55,30 @@ void controlLoop(int posiTaskum) {
 }
 
 
+unsigned char checkMotionFinish(unsigned char motionPeriod)
+{
+    unsigned char ret =0;
+    if (motionPeriod == 1) {
+        posiTask.taskPeriod = 3;
+        ccc_Control.pidA.out = 0;
+        ccc_Control.pidB.out = 0;
+    }
+    return ret;
+}
+
+
 unsigned char smcSyncTask(void)
 {
     unsigned char ret = 0;
+
+    // 根据误差比例线性组合 同步补偿和跟踪补偿
+    checkMotionFinish(ccc_Control.taskAccomplishFlag);
+
+    //
+    ccc_Control.kp1 = 8.0;
+    ccc_Control.kp2 = 8.0;
+
+
 
     return ret;
 }
@@ -94,7 +115,7 @@ unsigned char controlLoopWithWorkMode(int posiTaskum, unsigned char workMode)
     } else if (posiTask.taskPeriod == 1) { // 调平
         posiTask.taskPeriod = 2;
         return ret;
-        #if POSI_TAB_ENABLE
+        //#if POSI_TAB_ENABLE
             if (cmpAB >= 0) { // 双机运动方向一致
                 // 判断是否需要进行预调平
                 if (std::abs(syncError) < MAX_ALLOWED_MECHANICAL_ERROR_UM) {
@@ -122,22 +143,18 @@ unsigned char controlLoopWithWorkMode(int posiTaskum, unsigned char workMode)
             } else { // 方向相反，此时无需考虑同步误差，直接下一阶段启动归中
                 posiTask.taskPeriod = 4;
             }
-        #endif
+        //#endif
     } else if (posiTask.taskPeriod == 2) { // 同步启动
         ccc_Control.rotateAngle = std::atan2(syncError, ZAXIS_DISTANCE)*RAD_DU; // 更新同步旋转角度
         #if CCC_ALGO_ENABLE
-            if (ccc_Control.taskAccomplishFlag == 1) {
-                posiTask.taskPeriod = 3;
-                ccc_Control.pidA.out = 0;
-                ccc_Control.pidB.out = 0;
-            }
-            //        controlOutputA = syncError * ccc_Control.kp1 * (-1);
-            //        controlOutputB = syncError * ccc_Control.kp2;
-            controlOutputA = 0;
-            controlOutputB = 0;
+            checkMotionFinish(ccc_Control.taskAccomplishFlag);
 
+            // 同步分量
+            controlOutputA = syncError * ccc_Control.kp1 * (-1);
+            controlOutputB = syncError * ccc_Control.kp2;
             compensateOutput[0] = posiTaskum+controlOutputA;
             compensateOutput[1] = posiTaskum+controlOutputB;
+
             // 更新位置环PID输出
             PIDController_Update_WorkMode(&(ccc_Control.pidA), compensateOutput[0], currentPositionA, workMode);
             qDebug() << "PIDA output: " <<  ccc_Control.pidA.out << " \n";

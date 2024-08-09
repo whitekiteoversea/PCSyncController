@@ -2,7 +2,7 @@
 #include "FrameSheet.h"
 #include <QFile>
 #include <QTextStream>
-#include <QAxObject>
+// #include <QAxObject>
 #include <QDebug>
 
 QMutex m_Mutex;     //加锁以避免重复响应

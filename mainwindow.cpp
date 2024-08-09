@@ -12,6 +12,7 @@
 #include <math.h>
 #include <complex>
 #include <QVariant>
+#include <QElapsedTimer>
 
 #include "pid.h"
 #include "cccAlgo.h"
@@ -438,7 +439,7 @@ void MainWindow::sendRequestSig()
     //获取最新时间
     currentTime =QTime::currentTime();
     for (ii =0; ii<4; ii++) {
-        canpack.CANData[ii] = (refreshCnt >> 8*(3-ii)) & 0xFF;
+        canpack.CANData[ii] = (globalSynTime_ms >> (8*(3-ii))) & 0xFF;
     }
 
     if (curAlgoMode == 0) {

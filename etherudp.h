@@ -5,7 +5,7 @@
 #include <QUdpSocket>
 #include <QObject>
 #include <QByteArray>
-#include <QAxObject>
+//#include <QAxObject>
 #include <QVariant>
 #include "FrameSheet.h"
 //#include "wirelessserialport.h"
