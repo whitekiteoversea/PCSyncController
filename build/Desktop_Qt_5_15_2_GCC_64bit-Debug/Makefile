@@ -55,6 +55,7 @@ OBJECTS_DIR   = ./
 SOURCES       = ../../cccAlgo.cpp \
 		../../datatracer.cpp \
 		../../etherudp.cpp \
+		../../highprecisiontimer.cpp \
 		../../main.cpp \
 		../../mainwindow.cpp \
 		../../pid.cpp \
@@ -64,6 +65,7 @@ SOURCES       = ../../cccAlgo.cpp \
 		../../wirelessserialport.cpp qrc_uisource.cpp \
 		moc_datatracer.cpp \
 		moc_etherudp.cpp \
+		moc_highprecisiontimer.cpp \
 		moc_mainwindow.cpp \
 		moc_qcustomplot.cpp \
 		moc_timemonitor.cpp \
@@ -71,6 +73,7 @@ SOURCES       = ../../cccAlgo.cpp \
 OBJECTS       = cccAlgo.o \
 		datatracer.o \
 		etherudp.o \
+		highprecisiontimer.o \
 		main.o \
 		mainwindow.o \
 		pid.o \
@@ -81,6 +84,7 @@ OBJECTS       = cccAlgo.o \
 		qrc_uisource.o \
 		moc_datatracer.o \
 		moc_etherudp.o \
+		moc_highprecisiontimer.o \
 		moc_mainwindow.o \
 		moc_qcustomplot.o \
 		moc_timemonitor.o \
@@ -304,6 +308,7 @@ DIST          = /home/seakite2024/Qt/5.15.2/gcc_64/mkspecs/features/spec_pre.prf
 		../../cccAlgo.h \
 		../../datatracer.h \
 		../../etherudp.h \
+		../../highprecisiontimer.h \
 		../../mainwindow.h \
 		../../pid.h \
 		../../posiAlgo.h \
@@ -313,6 +318,7 @@ DIST          = /home/seakite2024/Qt/5.15.2/gcc_64/mkspecs/features/spec_pre.prf
 		../../wirelessserialport.h ../../cccAlgo.cpp \
 		../../datatracer.cpp \
 		../../etherudp.cpp \
+		../../highprecisiontimer.cpp \
 		../../main.cpp \
 		../../mainwindow.cpp \
 		../../pid.cpp \
@@ -782,8 +788,8 @@ distdir: FORCE
 	$(COPY_FILE) --parents $(DIST) $(DISTDIR)/
 	$(COPY_FILE) --parents ../../uisource.qrc $(DISTDIR)/
 	$(COPY_FILE) --parents /home/seakite2024/Qt/5.15.2/gcc_64/mkspecs/features/data/dummy.cpp $(DISTDIR)/
-	$(COPY_FILE) --parents ../../FrameSheet.h ../../cccAlgo.h ../../datatracer.h ../../etherudp.h ../../mainwindow.h ../../pid.h ../../posiAlgo.h ../../qcustomplot.h ../../smcAlgo.h ../../timemonitor.h ../../wirelessserialport.h $(DISTDIR)/
-	$(COPY_FILE) --parents ../../cccAlgo.cpp ../../datatracer.cpp ../../etherudp.cpp ../../main.cpp ../../mainwindow.cpp ../../pid.cpp ../../posiAlgo.cpp ../../qcustomplot.cpp ../../timemonitor.cpp ../../wirelessserialport.cpp $(DISTDIR)/
+	$(COPY_FILE) --parents ../../FrameSheet.h ../../cccAlgo.h ../../datatracer.h ../../etherudp.h ../../highprecisiontimer.h ../../mainwindow.h ../../pid.h ../../posiAlgo.h ../../qcustomplot.h ../../smcAlgo.h ../../timemonitor.h ../../wirelessserialport.h $(DISTDIR)/
+	$(COPY_FILE) --parents ../../cccAlgo.cpp ../../datatracer.cpp ../../etherudp.cpp ../../highprecisiontimer.cpp ../../main.cpp ../../mainwindow.cpp ../../pid.cpp ../../posiAlgo.cpp ../../qcustomplot.cpp ../../timemonitor.cpp ../../wirelessserialport.cpp $(DISTDIR)/
 	$(COPY_FILE) --parents ../../mainwindow.ui $(DISTDIR)/
 
 
@@ -841,9 +847,9 @@ compiler_moc_predefs_clean:
 moc_predefs.h: /home/seakite2024/Qt/5.15.2/gcc_64/mkspecs/features/data/dummy.cpp
 	g++ -pipe -g -std=gnu++11 -Wall -Wextra -dM -E -o moc_predefs.h /home/seakite2024/Qt/5.15.2/gcc_64/mkspecs/features/data/dummy.cpp
 
-compiler_moc_header_make_all: moc_datatracer.cpp moc_etherudp.cpp moc_mainwindow.cpp moc_qcustomplot.cpp moc_timemonitor.cpp moc_wirelessserialport.cpp
+compiler_moc_header_make_all: moc_datatracer.cpp moc_etherudp.cpp moc_highprecisiontimer.cpp moc_mainwindow.cpp moc_qcustomplot.cpp moc_timemonitor.cpp moc_wirelessserialport.cpp
 compiler_moc_header_clean:
-	-$(DEL_FILE) moc_datatracer.cpp moc_etherudp.cpp moc_mainwindow.cpp moc_qcustomplot.cpp moc_timemonitor.cpp moc_wirelessserialport.cpp
+	-$(DEL_FILE) moc_datatracer.cpp moc_etherudp.cpp moc_highprecisiontimer.cpp moc_mainwindow.cpp moc_qcustomplot.cpp moc_timemonitor.cpp moc_wirelessserialport.cpp
 moc_datatracer.cpp: ../../datatracer.h \
 		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/QObject \
 		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qobject.h \
@@ -1440,6 +1446,128 @@ moc_etherudp.cpp: ../../etherudp.h \
 		/home/seakite2024/Qt/5.15.2/gcc_64/bin/moc
 	/home/seakite2024/Qt/5.15.2/gcc_64/bin/moc $(DEFINES) --include /mnt/hgfs/Ubuntu_SharedFiles/PCSyncController/build/Desktop_Qt_5_15_2_GCC_64bit-Debug/moc_predefs.h -I/home/seakite2024/Qt/5.15.2/gcc_64/mkspecs/linux-g++ -I/mnt/hgfs/Ubuntu_SharedFiles/PCSyncController -I/home/seakite2024/Qt/5.15.2/gcc_64/include -I/home/seakite2024/Qt/5.15.2/gcc_64/include/QtPrintSupport -I/home/seakite2024/Qt/5.15.2/gcc_64/include/QtWidgets -I/home/seakite2024/Qt/5.15.2/gcc_64/include/QtGui -I/home/seakite2024/Qt/5.15.2/gcc_64/include/QtNetwork -I/home/seakite2024/Qt/5.15.2/gcc_64/include/QtSerialPort -I/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/gcc/x86_64-linux-gnu/13/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../etherudp.h -o moc_etherudp.cpp
 
+moc_highprecisiontimer.cpp: ../../highprecisiontimer.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtWidgets/QMainWindow \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtWidgets/qmainwindow.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtWidgets/qtwidgetsglobal.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtGui/qtguiglobal.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qglobal.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qconfig-bootstrapped.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qconfig.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qtcore-config.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qsystemdetection.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qprocessordetection.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qcompilerdetection.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qtypeinfo.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qsysinfo.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qlogging.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qflags.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qatomic.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qbasicatomic.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qatomic_bootstrap.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qgenericatomic.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qatomic_cxx11.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qatomic_msvc.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qglobalstatic.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qmutex.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qnumeric.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qversiontagging.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtGui/qtgui-config.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtWidgets/qtwidgets-config.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtWidgets/qwidget.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtGui/qwindowdefs.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qobjectdefs.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qnamespace.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qobjectdefs_impl.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtGui/qwindowdefs_win.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qobject.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qstring.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qchar.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qbytearray.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qrefcount.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qarraydata.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qstringliteral.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qstringalgorithms.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qstringview.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qstringbuilder.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qlist.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qalgorithms.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qiterator.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qhashfunctions.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qpair.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qvector.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qcontainertools_impl.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qpoint.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qbytearraylist.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qstringlist.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qregexp.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qstringmatcher.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qcoreevent.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qscopedpointer.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qmetatype.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qvarlengtharray.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qcontainerfwd.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qobject_impl.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qmargins.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtGui/qpaintdevice.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qrect.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qsize.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtGui/qpalette.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtGui/qcolor.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtGui/qrgb.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtGui/qrgba64.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtGui/qbrush.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtGui/qmatrix.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtGui/qpolygon.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtGui/qregion.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qdatastream.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qiodevice.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qline.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtGui/qtransform.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtGui/qimage.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtGui/qpixelformat.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtGui/qpixmap.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qsharedpointer.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qshareddata.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qhash.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qsharedpointer_impl.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtGui/qfont.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtGui/qfontmetrics.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtGui/qfontinfo.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtWidgets/qsizepolicy.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtGui/qcursor.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtGui/qkeysequence.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtGui/qevent.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qvariant.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qmap.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qdebug.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qtextstream.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qlocale.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qset.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qcontiguouscache.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qurl.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qurlquery.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qfile.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qfiledevice.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtGui/qvector2d.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtGui/qtouchdevice.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtWidgets/qtabwidget.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtGui/qicon.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/QElapsedTimer \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qelapsedtimer.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/QThread \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qthread.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qdeadlinetimer.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/QDebug \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/QTime \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qdatetime.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/QTimer \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qtimer.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qbasictimer.h \
+		moc_predefs.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/bin/moc
+	/home/seakite2024/Qt/5.15.2/gcc_64/bin/moc $(DEFINES) --include /mnt/hgfs/Ubuntu_SharedFiles/PCSyncController/build/Desktop_Qt_5_15_2_GCC_64bit-Debug/moc_predefs.h -I/home/seakite2024/Qt/5.15.2/gcc_64/mkspecs/linux-g++ -I/mnt/hgfs/Ubuntu_SharedFiles/PCSyncController -I/home/seakite2024/Qt/5.15.2/gcc_64/include -I/home/seakite2024/Qt/5.15.2/gcc_64/include/QtPrintSupport -I/home/seakite2024/Qt/5.15.2/gcc_64/include/QtWidgets -I/home/seakite2024/Qt/5.15.2/gcc_64/include/QtGui -I/home/seakite2024/Qt/5.15.2/gcc_64/include/QtNetwork -I/home/seakite2024/Qt/5.15.2/gcc_64/include/QtSerialPort -I/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/gcc/x86_64-linux-gnu/13/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../highprecisiontimer.h -o moc_highprecisiontimer.cpp
+
 moc_mainwindow.cpp: ../../mainwindow.h \
 		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtWidgets/QMainWindow \
 		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtWidgets/qmainwindow.h \
@@ -1972,6 +2100,8 @@ moc_mainwindow.cpp: ../../mainwindow.h \
 		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/QTime \
 		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/QFile \
 		../../datatracer.h \
+		../../highprecisiontimer.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/QThread \
 		moc_predefs.h \
 		/home/seakite2024/Qt/5.15.2/gcc_64/bin/moc
 	/home/seakite2024/Qt/5.15.2/gcc_64/bin/moc $(DEFINES) --include /mnt/hgfs/Ubuntu_SharedFiles/PCSyncController/build/Desktop_Qt_5_15_2_GCC_64bit-Debug/moc_predefs.h -I/home/seakite2024/Qt/5.15.2/gcc_64/mkspecs/linux-g++ -I/mnt/hgfs/Ubuntu_SharedFiles/PCSyncController -I/home/seakite2024/Qt/5.15.2/gcc_64/include -I/home/seakite2024/Qt/5.15.2/gcc_64/include/QtPrintSupport -I/home/seakite2024/Qt/5.15.2/gcc_64/include/QtWidgets -I/home/seakite2024/Qt/5.15.2/gcc_64/include/QtGui -I/home/seakite2024/Qt/5.15.2/gcc_64/include/QtNetwork -I/home/seakite2024/Qt/5.15.2/gcc_64/include/QtSerialPort -I/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/gcc/x86_64-linux-gnu/13/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../mainwindow.h -o moc_mainwindow.cpp
@@ -3233,7 +3363,8 @@ cccAlgo.o: ../../cccAlgo.cpp ../../cccAlgo.h \
 		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qset.h \
 		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qcontiguouscache.h \
 		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qsharedpointer.h \
-		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qsharedpointer_impl.h
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qsharedpointer_impl.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/QDebug
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o cccAlgo.o ../../cccAlgo.cpp
 
 datatracer.o: ../../datatracer.cpp ../../datatracer.h \
@@ -3882,6 +4013,126 @@ etherudp.o: ../../etherudp.cpp ../../etherudp.h \
 		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qfileinfo.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o etherudp.o ../../etherudp.cpp
 
+highprecisiontimer.o: ../../highprecisiontimer.cpp ../../highprecisiontimer.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtWidgets/QMainWindow \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtWidgets/qmainwindow.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtWidgets/qtwidgetsglobal.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtGui/qtguiglobal.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qglobal.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qconfig-bootstrapped.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qconfig.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qtcore-config.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qsystemdetection.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qprocessordetection.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qcompilerdetection.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qtypeinfo.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qsysinfo.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qlogging.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qflags.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qatomic.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qbasicatomic.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qatomic_bootstrap.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qgenericatomic.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qatomic_cxx11.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qatomic_msvc.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qglobalstatic.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qmutex.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qnumeric.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qversiontagging.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtGui/qtgui-config.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtWidgets/qtwidgets-config.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtWidgets/qwidget.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtGui/qwindowdefs.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qobjectdefs.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qnamespace.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qobjectdefs_impl.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtGui/qwindowdefs_win.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qobject.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qstring.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qchar.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qbytearray.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qrefcount.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qarraydata.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qstringliteral.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qstringalgorithms.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qstringview.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qstringbuilder.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qlist.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qalgorithms.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qiterator.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qhashfunctions.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qpair.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qvector.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qcontainertools_impl.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qpoint.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qbytearraylist.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qstringlist.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qregexp.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qstringmatcher.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qcoreevent.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qscopedpointer.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qmetatype.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qvarlengtharray.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qcontainerfwd.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qobject_impl.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qmargins.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtGui/qpaintdevice.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qrect.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qsize.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtGui/qpalette.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtGui/qcolor.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtGui/qrgb.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtGui/qrgba64.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtGui/qbrush.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtGui/qmatrix.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtGui/qpolygon.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtGui/qregion.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qdatastream.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qiodevice.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qline.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtGui/qtransform.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtGui/qimage.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtGui/qpixelformat.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtGui/qpixmap.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qsharedpointer.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qshareddata.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qhash.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qsharedpointer_impl.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtGui/qfont.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtGui/qfontmetrics.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtGui/qfontinfo.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtWidgets/qsizepolicy.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtGui/qcursor.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtGui/qkeysequence.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtGui/qevent.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qvariant.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qmap.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qdebug.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qtextstream.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qlocale.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qset.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qcontiguouscache.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qurl.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qurlquery.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qfile.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qfiledevice.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtGui/qvector2d.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtGui/qtouchdevice.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtWidgets/qtabwidget.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtGui/qicon.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/QElapsedTimer \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qelapsedtimer.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/QThread \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qthread.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qdeadlinetimer.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/QDebug \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/QTime \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qdatetime.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/QTimer \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qtimer.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/qbasictimer.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o highprecisiontimer.o ../../highprecisiontimer.cpp
+
 main.o: ../../main.cpp ../../mainwindow.h \
 		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtWidgets/QMainWindow \
 		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtWidgets/qmainwindow.h \
@@ -4414,6 +4665,8 @@ main.o: ../../main.cpp ../../mainwindow.h \
 		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/QTime \
 		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/QFile \
 		../../datatracer.h \
+		../../highprecisiontimer.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/QThread \
 		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtWidgets/QApplication \
 		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/QThreadPool
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o main.o ../../main.cpp
@@ -4950,12 +5203,26 @@ mainwindow.o: ../../mainwindow.cpp ../../mainwindow.h \
 		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/QTime \
 		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/QFile \
 		../../datatracer.h \
+		../../highprecisiontimer.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/QThread \
 		ui_mainwindow.h \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtWidgets/QApplication \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtWidgets/QCheckBox \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtWidgets/QComboBox \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtWidgets/QGridLayout \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtWidgets/QGroupBox \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtWidgets/QHBoxLayout \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtWidgets/QLabel \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtWidgets/QLineEdit \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtWidgets/QMenuBar \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtWidgets/QPushButton \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtWidgets/QSpacerItem \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtWidgets/QStatusBar \
+		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtWidgets/QVBoxLayout \
 		../../etherudp.h \
 		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/QByteArray \
 		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/QThreadPool \
 		../../timemonitor.h \
-		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/QThread \
 		/home/seakite2024/Qt/5.15.2/gcc_64/include/QtCore/QEventLoop \
 		../../pid.h \
 		../../cccAlgo.h \
@@ -5701,6 +5968,9 @@ moc_datatracer.o: moc_datatracer.cpp
 
 moc_etherudp.o: moc_etherudp.cpp 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_etherudp.o moc_etherudp.cpp
+
+moc_highprecisiontimer.o: moc_highprecisiontimer.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_highprecisiontimer.o moc_highprecisiontimer.cpp
 
 moc_mainwindow.o: moc_mainwindow.cpp 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_mainwindow.o moc_mainwindow.cpp

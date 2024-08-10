@@ -12,8 +12,8 @@ void controllerInit(unsigned char workMode)
     PIDController_Init_WorkMode(&(ccc_Control.pidA), workMode);
     PIDController_Init_WorkMode(&(ccc_Control.pidB), workMode);
 
-    ccc_Control.kp1 = 8.0;
-    ccc_Control.kp2 = 8.0;
+    ccc_Control.kp1 = 4;
+    ccc_Control.kp2 = 4;
 }
 
 float getRelevantPositionA() {
@@ -75,8 +75,8 @@ unsigned char smcSyncTask(void)
     checkMotionFinish(ccc_Control.taskAccomplishFlag);
 
     //
-    ccc_Control.kp1 = 8.0;
-    ccc_Control.kp2 = 8.0;
+    ccc_Control.kp1 = 1.0;
+    ccc_Control.kp2 = 1.0;
 
 
 
@@ -113,10 +113,8 @@ unsigned char controlLoopWithWorkMode(int posiTaskum, unsigned char workMode)
         cmpAB *= initialError[1];
         posiTask.taskPeriod = 1;
     } else if (posiTask.taskPeriod == 1) { // 调平
-        posiTask.taskPeriod = 2;
-        return ret;
-        //#if POSI_TAB_ENABLE
             if (cmpAB >= 0) { // 双机运动方向一致
+                dataCol.motionDir = 0x0F;
                 // 判断是否需要进行预调平
                 if (std::abs(syncError) < MAX_ALLOWED_MECHANICAL_ERROR_UM) {
                     // 调平完成，重新设定同步初始位置
@@ -125,6 +123,7 @@ unsigned char controlLoopWithWorkMode(int posiTaskum, unsigned char workMode)
                     // 停车进入下一阶段
                     ccc_Control.pidA.out = 0;
                     ccc_Control.pidB.out = 0;
+                    dataCol.motionDir = 0x0F; // 运动方向同向
                     posiTask.taskPeriod = 2;
                     return ret;
                 }
@@ -142,9 +141,10 @@ unsigned char controlLoopWithWorkMode(int posiTaskum, unsigned char workMode)
                 }
             } else { // 方向相反，此时无需考虑同步误差，直接下一阶段启动归中
                 posiTask.taskPeriod = 4;
+                dataCol.motionDir = 0x01;
             }
-        //#endif
     } else if (posiTask.taskPeriod == 2) { // 同步启动
+            ccc_Control.SyncErr = syncError;
         ccc_Control.rotateAngle = std::atan2(syncError, ZAXIS_DISTANCE)*RAD_DU; // 更新同步旋转角度
         #if CCC_ALGO_ENABLE
             checkMotionFinish(ccc_Control.taskAccomplishFlag);
@@ -211,18 +211,26 @@ void DualMotorPosiTask(CCCCONTROLLER *pCon, unsigned char sendNo, int posiTaskum
 
 //判断位置环控制任务是否完成
 // 任务指标：连续1s反馈数据与给定相差都在5%内
-unsigned char checkTaskAccomplish(int targetPosiUM, unsigned int returnPosiUM)
+unsigned char checkTaskAccomplish(int targetPosiUM, unsigned int returnPosiUM, unsigned char cmpObj)
 {
     unsigned char ret = 0;
     static unsigned short arrivalPeriodCnt = 0;
+    unsigned int cmpVal = 30;
     int32_t trackErr = targetPosiUM - returnPosiUM;
     // 这里由于速度模式下下发命令为rpm，导致即使将误差率降低，也无法再实际产生调整（rpm<0.1rpm）
 
-    if (std::abs(trackErr-targetPosiUM) < 31){ //绝对误差<31um 根据相对较差的机械精度来决定
+
+    if (cmpObj == 1) {
+        cmpVal = 55;
+    }
+
+    // 单机跟踪时 25um ，同步之后跟踪误差扩大到50um
+    if (std::abs(trackErr-targetPosiUM) <= cmpVal) { // 跟踪误差<25um，同步误差<50um 根据相对较差的机械精度来决定
         arrivalPeriodCnt++;
     } else {
         arrivalPeriodCnt = 0;
     }
+
 
     // 持续1s
     if (arrivalPeriodCnt >= (5000/CONTROL_SENSOR_PERIOD_MS)) {
@@ -235,13 +243,36 @@ unsigned char checkTaskAccomplish(int targetPosiUM, unsigned int returnPosiUM)
 void dataCollection(void)
 {
     dataCol.TaskTimeMS += CONTROL_SENSOR_PERIOD_MS;
-    if (dataCol.rotateAngle_MAX < ccc_Control.rotateAngle) {
-        dataCol.rotateAngle_MAX = ccc_Control.rotateAngle;
-    }
+    // 仅当运动方向同向时，记录最大同步误差及旋转角
+    if (dataCol.motionDir == 0x0F) {
 
-    if (dataCol.rotateAngle_MIN > ccc_Control.rotateAngle) {
-        dataCol.rotateAngle_MIN = ccc_Control.rotateAngle;
-    }
+        if (dataCol.syncErrorUM_ABS_MAX < std::abs(ccc_Control.SyncErr)) {
+            dataCol.syncErrorUM_ABS_MAX = std::abs(ccc_Control.SyncErr);
+        }
 
-    dataCol.rotateAngle_ABS_MAX = ((dataCol.rotateAngle_MAX+dataCol.rotateAngle_MIN) > 0.0) ? abs(dataCol.rotateAngle_MAX) : abs(dataCol.rotateAngle_MIN);
+        if (dataCol.rotateAngle_MAX < ccc_Control.rotateAngle) {
+            dataCol.rotateAngle_MAX = ccc_Control.rotateAngle;
+        }
+        if (dataCol.rotateAngle_MIN > ccc_Control.rotateAngle) {
+            dataCol.rotateAngle_MIN = ccc_Control.rotateAngle;
+        }
+
+        dataCol.rotateAngle_ABS_MAX = ((dataCol.rotateAngle_MAX+dataCol.rotateAngle_MIN) > 0.0) ? abs(dataCol.rotateAngle_MAX) : abs(dataCol.rotateAngle_MIN);
+    } else {
+        dataCol.rotateAngle_MIN = 0;
+        dataCol.rotateAngle_MAX = 0;
+        dataCol.rotateAngle_ABS_MAX = 0;
+    }
+}
+
+void dataCollectionReset(void)
+{
+    dataCol.TaskTimeMS = 0;
+    dataCol.motionDir = 0;
+    dataCol.rotateAngle_ABS_MAX = 0;
+    dataCol.rotateAngle_EMS = 0;
+    dataCol.rotateAngle_MAX = 0;
+    dataCol.rotateAngle_MIN = 0;
+    dataCol.syncErrorUM_EMS = 0;
+    dataCol.syncErrorUM_ABS_MAX = 0;
 }

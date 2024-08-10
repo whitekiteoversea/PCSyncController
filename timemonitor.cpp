@@ -12,7 +12,7 @@ timeMonitor::~timeMonitor()
 
 }
 
-//SLOT 定时器开关操作
+// SLOT 定时器开关操作
 void timeMonitor::timerStatusOperation(unsigned char OperationCmd)
 {
     if(OperationCmd == 0)
@@ -26,23 +26,23 @@ void timeMonitor::timerStatusOperation(unsigned char OperationCmd)
     }
 }
 
-//SLOT 定时器回调槽函数 本地计时
+// SLOT 定时器回调槽函数 本地计时
 void timeMonitor::handleEvent()
 {
     curTime++;
-    if(curTime >= 3600000) {
+    if(curTime >= 3600000) { //上位机运行1h计时重置
         curTime = 0;
     }
     emit cur_TimestampPrint(curTime);
 }
 
-//启动计时器
+// 启动计时器
 void timeMonitor::timingNowStart()
 {
     emit timerStartSig();
 }
 
-//关闭计时器
+// 关闭计时器
 void timeMonitor::timingNowStop()
 {
     emit timerCloseSig();

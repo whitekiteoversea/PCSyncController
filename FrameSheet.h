@@ -262,7 +262,7 @@ typedef struct {
 
 // 数据统计
 typedef struct {
-   volatile uint32_t syncErrorUM_MAX;
+   volatile uint32_t syncErrorUM_ABS_MAX; // ABS
    volatile uint32_t syncErrorUM_EMS;
 
    volatile float rotateAngle_MAX;
@@ -271,6 +271,7 @@ typedef struct {
    volatile float rotateAngle_EMS;
 
    volatile unsigned int TaskTimeMS; // 任务总时间
+   volatile unsigned char motionDir; // 本次记录任务的运动方向
 } MotionDataCol;
 
 #pragma pack()

@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1188</width>
-    <height>861</height>
+    <width>1221</width>
+    <height>867</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -498,7 +498,7 @@
           <item row="1" column="0">
            <widget class="QPushButton" name="pushButton_4">
             <property name="text">
-             <string>扫描可连接对象</string>
+             <string>扫描电机对象</string>
             </property>
            </widget>
           </item>
@@ -514,7 +514,7 @@
      <rect>
       <x>800</x>
       <y>230</y>
-      <width>351</width>
+      <width>401</width>
       <height>261</height>
      </rect>
     </property>
@@ -796,7 +796,7 @@
      <rect>
       <x>960</x>
       <y>510</y>
-      <width>201</width>
+      <width>241</width>
       <height>284</height>
      </rect>
     </property>
@@ -821,16 +821,16 @@
     <property name="title">
      <string>系统运行状态</string>
     </property>
-    <widget class="QWidget" name="layoutWidget">
+    <widget class="QWidget" name="">
      <property name="geometry">
       <rect>
-       <x>12</x>
-       <y>30</y>
-       <width>181</width>
-       <height>231</height>
+       <x>13</x>
+       <y>31</y>
+       <width>211</width>
+       <height>221</height>
       </rect>
      </property>
-     <layout class="QGridLayout" name="gridLayout_3">
+     <layout class="QFormLayout" name="formLayout">
       <item row="0" column="0">
        <layout class="QVBoxLayout" name="verticalLayout_3">
         <item>
@@ -852,43 +852,7 @@
         </item>
        </layout>
       </item>
-      <item row="2" column="0" colspan="3">
-       <layout class="QHBoxLayout" name="horizontalLayout_2">
-        <item>
-         <widget class="QLabel" name="label_39">
-          <property name="text">
-           <string>同步误差（um）：</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLabel" name="posiSyncError">
-          <property name="text">
-           <string>0</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </item>
-      <item row="3" column="0" colspan="3">
-       <layout class="QHBoxLayout" name="horizontalLayout_3">
-        <item>
-         <widget class="QLabel" name="label_40">
-          <property name="text">
-           <string>等效横梁旋转角：°</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLabel" name="rotateAngle">
-          <property name="text">
-           <string>0</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </item>
-      <item row="0" column="1" colspan="2">
+      <item row="0" column="1">
        <layout class="QVBoxLayout" name="verticalLayout_5">
         <item>
          <widget class="QLabel" name="label_43">
@@ -930,7 +894,7 @@
         </item>
        </layout>
       </item>
-      <item row="1" column="1" colspan="2">
+      <item row="1" column="1">
        <layout class="QVBoxLayout" name="verticalLayout_7">
         <item>
          <widget class="QLabel" name="label_44">
@@ -951,6 +915,78 @@
         </item>
        </layout>
       </item>
+      <item row="2" column="0" colspan="2">
+       <layout class="QHBoxLayout" name="horizontalLayout_2">
+        <item>
+         <widget class="QLabel" name="label_39">
+          <property name="text">
+           <string>同步误差（um）：</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="posiSyncError">
+          <property name="text">
+           <string>0</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item row="3" column="0" colspan="2">
+       <layout class="QHBoxLayout" name="horizontalLayout_4">
+        <item>
+         <widget class="QLabel" name="label_41">
+          <property name="text">
+           <string>最大误差（um）：</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="maxPosiSyncError">
+          <property name="text">
+           <string>0</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item row="5" column="0" colspan="2">
+       <layout class="QHBoxLayout" name="horizontalLayout_3">
+        <item>
+         <widget class="QLabel" name="label_40">
+          <property name="text">
+           <string>实时横梁旋转角：°</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="rotateAngle">
+          <property name="text">
+           <string>0</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item row="4" column="0" colspan="2">
+       <layout class="QHBoxLayout" name="horizontalLayout_5">
+        <item>
+         <widget class="QLabel" name="label_42">
+          <property name="text">
+           <string>最大横梁旋转角：°</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="maxRotateAngle">
+          <property name="text">
+           <string>0</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
      </layout>
     </widget>
    </widget>
@@ -959,7 +995,7 @@
      <rect>
       <x>800</x>
       <y>20</y>
-      <width>351</width>
+      <width>401</width>
       <height>191</height>
      </rect>
     </property>
@@ -1195,7 +1231,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1188</width>
+     <width>1221</width>
      <height>21</height>
     </rect>
    </property>

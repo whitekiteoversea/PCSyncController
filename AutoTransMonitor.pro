@@ -19,6 +19,7 @@ SOURCES += \
     cccAlgo.cpp \
     datatracer.cpp \
     etherudp.cpp \
+    highprecisiontimer.cpp \
     main.cpp \
     mainwindow.cpp \
     pid.cpp \
@@ -32,6 +33,7 @@ HEADERS += \
     cccAlgo.h \
     datatracer.h \
     etherudp.h \
+    highprecisiontimer.h \
     mainwindow.h \
     pid.h \
     posiAlgo.h \

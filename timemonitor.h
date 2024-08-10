@@ -29,6 +29,4 @@ private:
     int ThreadCun;
 };
 
-//volatile int totalAccuTime_Ms;  //时间累计
-
 #endif // TIMEMONITOR_H

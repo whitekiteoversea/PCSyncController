@@ -220,25 +220,22 @@ MainWindow::MainWindow(QWidget *parent)
     timeMonitor *localTotalTimeThread = new timeMonitor();  //计时线程
     localTotalTimeThread->start(); //开启计时线程
 
-    //本地计时器对象
-    QTimer *localTimer = new QTimer();
-    localTimer->setInterval(1);                     //1ms间隔
-    localTimer->setTimerType(Qt::PreciseTimer);     //精确定时器(其实一点也不精确)
-    localTimer->moveToThread(localTotalTimeThread); //移动到其他线程
+    // 高精度定时
+    highPrecisionTimer = new HighPrecisionTimer();
+    highPrecisionTimer->start();
+    highPrecisionTimer->moveToThread(localTotalTimeThread); //移动到其他线程
 
-    //操作子线程中的定时器
-    connect(this, SIGNAL(timerCTRSend(unsigned char)),
-            localTotalTimeThread, SLOT(timerStatusOperation(unsigned char)), Qt::AutoConnection);               // 定时开始或结束
-    connect(localTotalTimeThread, SIGNAL(timerStartSig()),localTimer, SLOT(start()),Qt::AutoConnection);        // 启动定时器
-    connect(localTotalTimeThread, SIGNAL(timerCloseSig()),localTimer, SLOT(stop()),Qt::AutoConnection);         // 停止定时器
+    // 操作子线程中的定时器
+    connect(this, SIGNAL(timerCTRSend(unsigned char)), localTotalTimeThread, SLOT(timerStatusOperation(unsigned char)), Qt::AutoConnection);  // 定时开始或结束
+    connect(localTotalTimeThread, SIGNAL(timerStartSig()), highPrecisionTimer, SLOT(start()), Qt::AutoConnection);        // 启动定时器
+    connect(localTotalTimeThread, SIGNAL(timerCloseSig()), highPrecisionTimer, SLOT(stop()), Qt::AutoConnection);         // 停止定时器
 
-    //打印当前计时时间戳
-    connect(localTotalTimeThread, SIGNAL(cur_TimestampPrint(unsigned int)),
-            this, SLOT(onTimeout(unsigned int)), Qt::QueuedConnection);   //传输当前时间戳
-    //定时发送时间戳
-    connect(localTimer, SIGNAL(timeout()), localTotalTimeThread, SLOT(handleEvent()),Qt::AutoConnection);        //超时执行
+    // 打印当前计时时间戳
+    connect(localTotalTimeThread, SIGNAL(cur_TimestampPrint(unsigned int)), this, SLOT(onTimeout(unsigned int)), Qt::QueuedConnection);   //传输当前时间戳
+    // 定时发送时间戳
+    connect(highPrecisionTimer, SIGNAL(timeout()), localTotalTimeThread, SLOT(handleEvent()),Qt::AutoConnection);        //超时执行
 
-    //结束计时线程
+    // 结束计时线程
     connect(this, &MainWindow::destroyed, localTotalTimeThread, [=]()
     {
         //停止计时器
@@ -519,7 +516,7 @@ void MainWindow::singleMotorPosiLoop(void)
     if (posiSyncModeEnabled == 2) {
         singleMotorPosiTask(1, targetPosium[0], PMSMCurWorkMode[0]);
         speedGivenUpdate(1, (short)(posiPIDA.out));
-        if (checkTaskAccomplish(targetPosium[0], getRelevantPositionA()) == 1) {
+        if (checkTaskAccomplish(targetPosium[0], getRelevantPositionA(), 0) == 1) {
             speedGivenUpdate(1, 0);
             posiSyncModeEnabled = 0;
         }
@@ -529,7 +526,7 @@ void MainWindow::singleMotorPosiLoop(void)
     if (posiSyncModeEnabled == 3) {
         singleMotorPosiTask(2, targetPosium[1], PMSMCurWorkMode[1]);
         speedGivenUpdate(2, (short)(posiPIDB.out));
-        if (checkTaskAccomplish(targetPosium[1], getRelevantPositionB()) == 1) {
+        if (checkTaskAccomplish(targetPosium[1], getRelevantPositionB(), 0) == 1) {
             speedGivenUpdate(2, 0);
             posiSyncModeEnabled = 0;
         }
@@ -571,13 +568,18 @@ void MainWindow::onTimeout(unsigned int RecvCurTimeStamp_Ms)
             speedGivenUpdate(2, (short)(ccc_Control.pidB.out));
             qDebug() << "SendSpeedB: " << (short)(ccc_Control.pidB.out) << " \n";
             dataCollection();// 过程指标数据记录
-            if ((checkTaskAccomplish(posiTask.taskPosiUM, getRelevantPositionA()) == 1) && \
-                (checkTaskAccomplish(posiTask.taskPosiUM, getRelevantPositionB()) == 1)) {
+            ui->maxPosiSyncError->setText(QString::number(dataCol.syncErrorUM_ABS_MAX, 10));
+            ui->maxRotateAngle->setText(QString::number(dataCol.rotateAngle_ABS_MAX, 'f', 3));
+
+            if ((checkTaskAccomplish(posiTask.taskPosiUM, getRelevantPositionA(), 0) == 1) && \
+                (checkTaskAccomplish(posiTask.taskPosiUM, getRelevantPositionB(), 0) == 1) && \
+                (checkTaskAccomplish(getRelevantPositionA(), getRelevantPositionB(), 1) == 1)) {
                 // 抵达停机
-                speedGivenUpdate(1, 0);
-                speedGivenUpdate(2, 0);
+//                speedGivenUpdate(1, 0);
+//                speedGivenUpdate(2, 0);
                 if (ccc_Control.taskAccomplishFlag == 0) {
                     ccc_Control.taskAccomplishFlag = 1;
+                    dataCollectionReset();
                 }
                 posiSyncModeEnabled = 0;
             }

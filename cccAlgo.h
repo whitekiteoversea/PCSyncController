@@ -15,8 +15,8 @@ typedef struct {
     float kp2;
 
     unsigned char taskAccomplishFlag;
-
     float rotateAngle;
+    volatile int SyncErr;
 } CCCCONTROLLER;
 
 float getRelevantPositionA(void);
@@ -30,8 +30,7 @@ unsigned char checkMotionFinish(unsigned char motionPeriod); // 检测同步运�
 
 void singleMotorPosiTask(unsigned char sendNo, int posiTaskum, unsigned char workMode);
 void DualMotorPosiTask(CCCCONTROLLER *pCon, unsigned char sendNo, int posiTaskum, unsigned char workMode);
-unsigned char checkTaskAccomplish(int targetPosiUM, unsigned int returnPosiUM);
-
+unsigned char checkTaskAccomplish(int targetPosiUM, unsigned int returnPosiUM, unsigned char cmpObj);
 unsigned char controlLoopWithWorkMode(int posiTaskum, unsigned char workMode);
 
 // SMC
@@ -40,6 +39,7 @@ unsigned char smcSyncTask(void);
 
 // 数据统计函数
 void dataCollection(void);
+void dataCollectionReset(void);
 
 extern CCCCONTROLLER ccc_Control;
 extern PIDController posiPIDA;

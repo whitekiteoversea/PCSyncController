@@ -13,6 +13,7 @@
 #include "FrameSheet.h"
 #include <QFile>
 #include "datatracer.h"
+#include "highprecisiontimer.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -114,9 +115,11 @@ private:
     QCPTextElement *m_title;
     QUdpSocket *sendSocket;  //发送Socket
 
-    //QAxObject *excel;
     QTime currentTime;
     QFile *pFile;
+
+    HighPrecisionTimer *highPrecisionTimer;
+
 
     QPoint m_PressedPoint;
     DataTracer *p_DataTracer;
