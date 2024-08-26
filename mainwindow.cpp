@@ -14,6 +14,11 @@
 #include <QVariant>
 #include <QElapsedTimer>
 
+#include <QFileDialog>
+#include <QTextStream>
+#include <QDateTime>
+#include <QMessageBox>
+
 #include "pid.h"
 #include "cccAlgo.h"
 #include "posiAlgo.h"
@@ -1475,33 +1480,46 @@ void num2constStr(unsigned int num, const char* str)
 void MainWindow::sdramDataSave(unsigned char saveCASID)
 {
     unsigned int cnt = 0;
-    //1.选择导出的csv文件保存路径
-    QString csvFile = QFileDialog::getExistingDirectory(this);
+
+    // 1. 选择导出的csv文件保存路径
+    QString csvFile = QFileDialog::getSaveFileName(
+        this,
+        tr("Save CSV File"),
+        QString(),
+        tr("CSV Files (*.csv)")
+        );
     if (csvFile.isEmpty())
         return;
 
-    //2.文件名采用CASID+系统时间戳生成唯一的文件
-    QDateTime current_date_time =QDateTime::currentDateTime();
-    QString current_date =current_date_time.toString("yyyy_MM_dd_hh_mm_ss");
-    csvFile += tr("/CAS%1_SDRAMFileSave_export_%2.csv").arg(saveCASID).arg(current_date);
+    // 2. 文件名采用CASID+系统时间戳生成唯一的文件
+    QDateTime current_date_time = QDateTime::currentDateTime();
+    QString current_date = current_date_time.toString("yyyy_MM_dd_hh_mm_ss");
+    QString fullFileName = QString("%1/CAS%2_SDRAMFileSave_export_%3.csv")
+                               .arg(QFileInfo(csvFile).path())
+                               .arg(saveCASID)
+                               .arg(current_date);
 
-    //3.用QFile打开.csv文件 如果不存在则会自动新建一个新的文件
-    QFile file(csvFile);
-    if (file.exists()) {
-        //如果文件存在执行的操作，此处为空，因为文件不可能存在
+    // 3. 用QFile打开.csv文件，如果不存在则会自动新建一个新的文件
+    QFile file(fullFileName);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QMessageBox::warning(this, tr("Error"), tr("Could not open file for writing."));
+        return;
     }
-    file.open( QIODevice::ReadWrite | QIODevice::Text );
+
     statusBar()->showMessage(tr("正在导出数据..."));
     QTextStream out(&file);
 
-    //4.获取数据 创建表头
-    out<<tr("GlobalTimeMS,")<<tr("LocalTimeMS,")<<tr("realTimePosi_um,")<<tr("realTimeTorque_1000p,\n");//表头
-    for (cnt = 0; cnt<recordCnt; cnt++) {
-        out << onceRecvArray[cnt].g_time_ms << "," << onceRecvArray[cnt].l_time_ms << "," << onceRecvArray[cnt].posi_um << "\n";
+    // 4. 获取数据 创建表头
+    out << tr("GlobalTimeMS,") << tr("LocalTimeMS,") << tr("realTimePosi_um,") << tr("realTimeTorque_1000p,\n"); // 表头
+    for (cnt = 0; cnt < recordCnt; cnt++) {
+        out << onceRecvArray[cnt].g_time_ms << ","
+            << onceRecvArray[cnt].l_time_ms << ","
+            << onceRecvArray[cnt].posi_um << "\n";
     }
 
-    //5.写完数据需要关闭文件
+    // 5. 写完数据需要关闭文件
     file.close();
+    statusBar()->clearMessage(); // 清除状态栏消息
 }
 
 // 参考速度信号曲线生成

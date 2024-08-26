@@ -95,7 +95,7 @@
            <x>11</x>
            <y>20</y>
            <width>681</width>
-           <height>30</height>
+           <height>32</height>
           </rect>
          </property>
          <layout class="QGridLayout" name="gridLayout_4">
@@ -131,7 +131,7 @@
              <string>50</string>
             </property>
             <property name="alignment">
-             <set>Qt::AlignCenter</set>
+             <set>Qt::AlignmentFlag::AlignCenter</set>
             </property>
            </widget>
           </item>
@@ -166,7 +166,7 @@
       <item>
        <spacer name="verticalSpacer">
         <property name="orientation">
-         <enum>Qt::Vertical</enum>
+         <enum>Qt::Orientation::Vertical</enum>
         </property>
         <property name="sizeHint" stdset="0">
          <size>
@@ -232,7 +232,7 @@
       <item row="0" column="0">
        <spacer name="horizontalSpacer_2">
         <property name="orientation">
-         <enum>Qt::Horizontal</enum>
+         <enum>Qt::Orientation::Horizontal</enum>
         </property>
         <property name="sizeHint" stdset="0">
          <size>
@@ -371,7 +371,7 @@
       <item row="0" column="2">
        <spacer name="horizontalSpacer_3">
         <property name="orientation">
-         <enum>Qt::Horizontal</enum>
+         <enum>Qt::Orientation::Horizontal</enum>
         </property>
         <property name="sizeHint" stdset="0">
          <size>
@@ -384,7 +384,7 @@
       <item row="0" column="6">
        <spacer name="horizontalSpacer">
         <property name="orientation">
-         <enum>Qt::Horizontal</enum>
+         <enum>Qt::Orientation::Horizontal</enum>
         </property>
         <property name="sizeHint" stdset="0">
          <size>
@@ -397,7 +397,7 @@
       <item row="0" column="4">
        <spacer name="horizontalSpacer_4">
         <property name="orientation">
-         <enum>Qt::Horizontal</enum>
+         <enum>Qt::Orientation::Horizontal</enum>
         </property>
         <property name="sizeHint" stdset="0">
          <size>
@@ -430,7 +430,7 @@
            <x>10</x>
            <y>23</y>
            <width>311</width>
-           <height>108</height>
+           <height>132</height>
           </rect>
          </property>
          <layout class="QGridLayout" name="gridLayout">
@@ -563,7 +563,7 @@
         <string>0</string>
        </property>
        <property name="alignment">
-        <set>Qt::AlignCenter</set>
+        <set>Qt::AlignmentFlag::AlignCenter</set>
        </property>
       </widget>
      </item>
@@ -573,7 +573,7 @@
         <string>0</string>
        </property>
        <property name="alignment">
-        <set>Qt::AlignCenter</set>
+        <set>Qt::AlignmentFlag::AlignCenter</set>
        </property>
       </widget>
      </item>
@@ -590,7 +590,7 @@
         <string>0</string>
        </property>
        <property name="alignment">
-        <set>Qt::AlignCenter</set>
+        <set>Qt::AlignmentFlag::AlignCenter</set>
        </property>
       </widget>
      </item>
@@ -600,7 +600,7 @@
         <string>0</string>
        </property>
        <property name="alignment">
-        <set>Qt::AlignCenter</set>
+        <set>Qt::AlignmentFlag::AlignCenter</set>
        </property>
       </widget>
      </item>
@@ -821,13 +821,13 @@
     <property name="title">
      <string>系统运行状态</string>
     </property>
-    <widget class="QWidget" name="">
+    <widget class="QWidget" name="layoutWidget">
      <property name="geometry">
       <rect>
        <x>13</x>
        <y>31</y>
        <width>211</width>
-       <height>221</height>
+       <height>224</height>
       </rect>
      </property>
      <layout class="QFormLayout" name="formLayout">
@@ -846,7 +846,7 @@
            <string>0</string>
           </property>
           <property name="alignment">
-           <set>Qt::AlignCenter</set>
+           <set>Qt::AlignmentFlag::AlignCenter</set>
           </property>
          </widget>
         </item>
@@ -867,7 +867,7 @@
            <string>0</string>
           </property>
           <property name="alignment">
-           <set>Qt::AlignCenter</set>
+           <set>Qt::AlignmentFlag::AlignCenter</set>
           </property>
          </widget>
         </item>
@@ -888,7 +888,7 @@
            <string>0</string>
           </property>
           <property name="alignment">
-           <set>Qt::AlignCenter</set>
+           <set>Qt::AlignmentFlag::AlignCenter</set>
           </property>
          </widget>
         </item>
@@ -909,7 +909,7 @@
            <string>0</string>
           </property>
           <property name="alignment">
-           <set>Qt::AlignCenter</set>
+           <set>Qt::AlignmentFlag::AlignCenter</set>
           </property>
          </widget>
         </item>
@@ -1098,7 +1098,7 @@
      <item>
       <spacer name="horizontalSpacer_5">
        <property name="orientation">
-        <enum>Qt::Horizontal</enum>
+        <enum>Qt::Orientation::Horizontal</enum>
        </property>
        <property name="sizeHint" stdset="0">
         <size>
@@ -1150,7 +1150,7 @@
           <x>12</x>
           <y>30</y>
           <width>111</width>
-          <height>141</height>
+          <height>160</height>
          </rect>
         </property>
         <layout class="QVBoxLayout" name="verticalLayout_8">
@@ -1232,7 +1232,7 @@
      <x>0</x>
      <y>0</y>
      <width>1221</width>
-     <height>21</height>
+     <height>27</height>
     </rect>
    </property>
   </widget>
